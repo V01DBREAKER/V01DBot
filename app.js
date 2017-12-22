@@ -1,12 +1,16 @@
 const Discord = require("discord.js");
 const client = new Discord.Client();
 const config = require("./config.json");
-
+const Enmap = require('enmap');
+const EnmapLevel = require('enmap-level');
 const fs = require('fs');
 const yt = require('ytdl-core')
 const ffmpeg = require('fluent-ffmpeg')
 const cheerio = require('cheerio');
 request = require('request');
+
+const optionS = new EnmapLevel({name: "op"});
+client.op = new Enmap({provider: optionS});
 
 // This loop reads the /events/ folder and attaches each event file to the appropriate event.
 fs.readdir("./events/", (err, files) => {
