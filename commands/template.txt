@@ -1,0 +1,14 @@
+exports.run = (client, message, args) => {
+	/*
+	if(args.length > 1) return
+	OR
+	if(args.length < 0) return
+	*/
+}
+
+exports.help = {
+	name: "COMMANDNAME",
+	category: "CATEGORYNAME",
+	description: "DESCRIPTION",
+	usage: "\`USAGE\`"
+}
