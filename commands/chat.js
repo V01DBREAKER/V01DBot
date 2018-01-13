@@ -1,5 +1,8 @@
 exports.run = (client, message, args) => {
   let op = client.op.get(message.guild.id);
+  if (!message.member.hasPermission("MANAGE_GUILD")) {
+    message.reply("You need the MANAGE_MESSAGES permission to enable chat bot...")
+  }
   if (op == 1) {
     client.op.set(message.guild.id, 0);
     message.reply("Bot chat disabled.")

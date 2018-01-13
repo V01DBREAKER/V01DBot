@@ -131,4 +131,7 @@ exports.run = (client, message) => {
   if (msg == 'np') {
     message.reply("Does that mean nope or no problem?")
   }
+  if (msg == 'imao' || msg == 'lmao') {
+    message.reply("Is your ass on the grass now?")
+  }
 }
