@@ -7,6 +7,7 @@ const fs = require('fs');
 const yt = require('ytdl-core')
 const ffmpeg = require('fluent-ffmpeg')
 const cheerio = require('cheerio');
+const path = require("path");
 request = require('request');
 
 const optionS = new EnmapLevel({name: "op"});
@@ -27,7 +28,7 @@ client.on("message", message => {
   client.user.setGame(`${config.prefix}help for help`);
   if (message.author.bot) return;
   if(message.content.indexOf(config.prefix) !== 0) {
-    let reply = require(`./assets/reply.js`);
+    let reply = require(path.join(__dirname, "assets", "reply.js");
     reply.run(client, message);
     return;
   }
