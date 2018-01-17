@@ -10,7 +10,7 @@ exports.run = (client, message, args) => {
   }
 
   botusers(client, message, function(botuser){
-    var peeps = message.channel.members.size - botuser
+    var peeps = message.channel.members.size - botuser;
     message.channel.members.forEach(function(el){
       if (el.user.bot == true) return;
       usr.push(`<@${el.id}>`);
