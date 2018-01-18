@@ -1,3 +1,7 @@
+const config = require("../config.json");
+const Discord = require("discord.js");
+const fs = require("fs");
+
 exports.run = (client, message, args) => {
 	const Discord = require("discord.js");
 	var skin;
@@ -9,7 +13,7 @@ exports.run = (client, message, args) => {
 		if (args[1] == undefined) {
 			skin = "classic";
 		} else if (args[1] == "tall" || args[1] == "classic" || args[1] == "face" || args[1] == "round" || args[1] == "default") {
-			skin = args[1]
+			skin = args[1];
 		} else {
 			message.reply("Type unknown...");
 			return;
@@ -17,7 +21,7 @@ exports.run = (client, message, args) => {
 		if (args[2] == undefined) {
 			size = "80";
 		} else if (args[2] == "20" || args[2] == "40" || args[2] == "60" || args[2] == "80" || args[2] == "90" || args[2] == "100") {
-			size = args[2]
+			size = args[2];
 		} else {
 			message.reply("Size unknown...");
 			return;

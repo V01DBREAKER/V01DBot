@@ -1,6 +1,10 @@
+const config = require("../config.json");
+const Discord = require("discord.js");
+const fs = require("fs");
+
 exports.run = (client, message, args) => {
-	if(args.length < 1) return message.reply("Please enter IP Address to search")
-	var mcargs = args[0].split(":")
+	if(args.length < 1) return message.reply("Please enter IP Address to search");
+	var mcargs = args[0].split(":");
 	var mcIP = mcargs[0]; // Your MC server IP
 	var mcPort = mcargs[1]; // Your MC server port
 	if (mcPort == undefined) {

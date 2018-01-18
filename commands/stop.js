@@ -1,6 +1,8 @@
+const config = require("../config.json");
+const Discord = require("discord.js");
+const fs = require("fs");
+
 exports.run = (client, message, args) => {
-	if(args.length > 1) return
-    const config = require("../config.json");
 	if (message.author.id !== config.ownerID) return;
 	message.channel.send('Bye world! Be back as soon as my owner reactivates me!')
 	console.log('Bot is shutting down...')
@@ -27,7 +29,7 @@ exports.help = (client, message, args) => {
 				{
 				name: "Description",
 				value: "Stops the bot, only used by bot owner"
-				},	
+				},
 				{
 				name: "Usage",
 				value: "\`stop\`"

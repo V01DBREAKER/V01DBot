@@ -1,5 +1,8 @@
+const config = require("../config.json");
+const Discord = require("discord.js");
+const fs = require("fs");
+
 exports.run = (client, message, args) => {
-	if(args.length > 0) return
 	message.channel.send("Run Its A Creeper!!!", {
 	file: "./assets/hugecreeper.png"
 	});

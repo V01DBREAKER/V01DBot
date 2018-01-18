@@ -42,7 +42,7 @@ exports.run = (client, message, args) => {
 			} else if (args[0] == "search") {
 				cmdList(search, client, message, args);
 			} else {
-				message.send("Unknown category")
+				message.send("Unknown category");
 				return;
 			}
 			message.reply("Sent you a command list.");

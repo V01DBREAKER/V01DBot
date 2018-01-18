@@ -26,6 +26,10 @@ fs.readdir("./events/", (err, files) => {
 client.on("message", message => {
   client.user.setGame(`${config.prefix}help for help`);
   if (message.author.bot) return;
+  if (message.channel.type == 'dm') {
+    message.channel.send("\`Sorry but i don't take DMs.\`")
+    return;
+  }
   if(message.content.indexOf(config.prefix) !== 0) {
     let reply = require(`./assets/reply.js`);
     reply.run(client, message);

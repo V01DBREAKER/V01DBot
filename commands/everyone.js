@@ -1,4 +1,6 @@
-const config = require("../config.json")
+const config = require("../config.json");
+const Discord = require("discord.js");
+const fs = require("fs");
 
 exports.run = (client, message, args) => {
   var usr = [];
@@ -10,14 +12,14 @@ exports.run = (client, message, args) => {
   }
 
   botusers(client, message, function(botuser){
-    var peeps = message.channel.members.size - botuser
+    var peeps = message.channel.members.size - botuser;
     message.channel.members.forEach(function(el){
       if (el.user.bot == true) return;
       usr.push(`<@${el.id}>`);
       if (usr.length == peeps) {
         usr = usr.join(" ");
-        message.channel.send("Hey Listen!!! @everyone")
-        message.channel.send(usr)
+        message.channel.send("Hey Listen!!! @everyone");
+        message.channel.send(usr);
       }
     });
   })
@@ -40,7 +42,7 @@ function botusers(client, message, callback) {
       return;
     }
     if (i == message.channel.members.size) {
-      callback(botuser)
+      callback(botuser);
     }
   });
 }

@@ -1,6 +1,9 @@
+const config = require("../config.json");
+const Discord = require("discord.js");
+const fs = require("fs");
+
 exports.run = (client, message, args) => {
 	if (args.length < 1) {
-		const config = require("../config.json");
 		message.author.send({embed: {
 			color: 3447003,
 			author: {
@@ -49,7 +52,7 @@ exports.run = (client, message, args) => {
 						{
 						name: "Description",
 						value: commandH.help.description
-						},	
+						},
 						{
 						name: "Usage",
 						value: commandH.help.usage

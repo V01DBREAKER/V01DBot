@@ -1,6 +1,9 @@
+const config = require("../config.json");
+const Discord = require("discord.js");
+const fs = require("fs");
+
 exports.run = (client, message, args) => {
-	if(args.length > 1) return
-    message.channel.send(`Pong! V01DBot Latency is ${Math.round(client.ping)}ms.`);
+  message.channel.send(`Pong! V01DBot Latency is ${Math.round(client.ping)}ms.`);
 }
 
 exports.help = {

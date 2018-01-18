@@ -1,9 +1,17 @@
-exports.run = (client, message, [mention, ...reason]) => {
-	if (!message.member.hasPermission("KICK_MEMBERS"))
-		return message.reply("You can't use this command.");
+const config = require("../config.json");
+const Discord = require("discord.js");
+const fs = require("fs");
 
-	if (message.mentions.members.size === 0)
-		return message.reply("Please mention a user to kick");
+exports.run = (client, message, [mention, ...reason]) => {
+	if (!message.member.hasPermission("KICK_MEMBERS")) {
+		message.reply("You can't use this command.");
+		return;
+	}
+
+	if (message.mentions.members.size === 0) {
+		message.reply("Please mention a user to kick");
+		return;
+	}
 
 	if (!message.guild.me.hasPermission("KICK_MEMBERS")) {
 		message.reply("Bot has insufficent permissions")
@@ -13,13 +21,13 @@ exports.run = (client, message, [mention, ...reason]) => {
 
 	const kickMember = message.mentions.members.first();
 	if (!kickMember.kickable) {
-		message.reply(`Cannot kick ${kickMember.user.username}, bot's rank is too low`)
+		message.reply(`Cannot kick ${kickMember.user.username}, bot's rank is too low`);
 		console.log(`Cannot kick ${kickMember.user.username} because insufficent permissions by ${message.author.username} at ${message.guild.name}`);
 		return;
 	}
 
 	kickMember.kick(reason.join(" ")).then(member => {
-		message.reply(`Successfully kicked ${member.user.username}`)
+		message.reply(`Successfully kicked ${member.user.username}`);
 		console.log(`${member.user.username} at ${message.guild.name} was succesfully kicked by ${message.author.username} at ${message.guild.name}`);
 	});
 }

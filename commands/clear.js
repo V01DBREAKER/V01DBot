@@ -1,3 +1,7 @@
+const config = require("../config.json");
+const Discord = require("discord.js");
+const fs = require("fs");
+
 exports.run = (client, message, args) => {
 	var deleteCount = parseInt(args[0], 10);
 	if (!message.guild.me.hasPermission("MANAGE_MESSAGES")) {
@@ -16,7 +20,7 @@ exports.run = (client, message, args) => {
 			message.channel.fetchMessages()
 				.then(function(list){
 					message.channel.bulkDelete(list).catch(O_o=>{});
-					message.channel.send('Deleted 14 days worth of messages')
+					message.channel.send('Deleted 14 days worth of messages');
 					.then(mes => mes.delete(5000));
 					console.log(`Deleted 14 days worth of messages at ${message.guild.name} initiated by ${message.author.username}`);
 				});
@@ -26,7 +30,7 @@ exports.run = (client, message, args) => {
 					message.channel.bulkDelete(list).catch(O_o=>{});
 					message.channel.send(`Deleted ${deleteCount} messages`)
 					.then(mes => mes.delete(5000));
-					console.log(`Deleted ${deleteCount} message(s) at ${message.guild.name} initiated by ${message.author.username}`)
+					console.log(`Deleted ${deleteCount} message(s) at ${message.guild.name} initiated by ${message.author.username}`);
 				});
 		};
 	};

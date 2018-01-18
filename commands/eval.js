@@ -1,8 +1,8 @@
-const Discord = require("discord.js")
-const config = require("../config.json")
- 
+const config = require("../config.json");
+const Discord = require("discord.js");
+const fs = require("fs");
+
 exports.run = (client, message, args) => {
-	if(args.length < 0) return
 	if(message.author.id !== config.ownerID) return;
     try {
       const code = args.join(" ");
