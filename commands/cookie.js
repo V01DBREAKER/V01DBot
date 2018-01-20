@@ -5,7 +5,7 @@ const fs = require("fs");
 exports.run = (client, message, args) => {
 	if(args.length > 1) return
 	message.reply(':cookie:')
-	console.log(`Sent a cookie to ${message.author}`));
+	console.log(`Sent a cookie to ${message.author}`);
 }
 
 exports.help = {

@@ -20,7 +20,7 @@ exports.run = (client, message, args) => {
 			message.channel.fetchMessages()
 				.then(function(list){
 					message.channel.bulkDelete(list).catch(O_o=>{});
-					message.channel.send('Deleted 14 days worth of messages');
+					message.channel.send('Deleted 14 days worth of messages')
 					.then(mes => mes.delete(5000));
 					console.log(`Deleted 14 days worth of messages at ${message.guild.name} initiated by ${message.author.username}`);
 				});
