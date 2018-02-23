@@ -20,7 +20,7 @@ exports.run = (client, message, args) => {
 			message.channel.fetchMessages()
 				.then(function(list){
 					message.channel.bulkDelete(list).catch(O_o=>{});
-					message.channel.send('Deleted 14 days worth of messages')
+					message.channel.send('Sucked in 14 days worth of messages into the V01D')
 					.then(mes => mes.delete(5000));
 					console.log(`Deleted 14 days worth of messages at ${message.guild.name} initiated by ${message.author.username}`);
 				});
@@ -28,7 +28,7 @@ exports.run = (client, message, args) => {
 			message.channel.fetchMessages({limit: deleteCount})
 				.then(function(list){
 					message.channel.bulkDelete(list).catch(O_o=>{});
-					message.channel.send(`Deleted ${deleteCount} messages`)
+					message.channel.send(`Sucked ${deleteCount} messages into the V01D`)
 					.then(mes => mes.delete(5000));
 					console.log(`Deleted ${deleteCount} message(s) at ${message.guild.name} initiated by ${message.author.username}`);
 				});

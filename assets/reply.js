@@ -136,13 +136,53 @@ exports.run = (client, message) => {
   if (msg == 'ikr') {
     message.reply("Sorry but i don't know what being right is, please explain.");
   }
-  if (msg == 'kys') {
+  if (msg == 'kys' || msg == 'kys bot') {
     message.reply("I would prefer an honourable death by seppuku then die by a faceless internet coward's insults.");
   }
   if (msg == 'good bot') {
     message.reply("Aww, thanks! Oh you weren't talking to me...");
   }
-  if (msg == 'm!yt' || msg == 'm!youtube') {
-    message.reply("Don't listen to MegaBot, it may be created by my owner but it's evil. Try this youtube link instead.\nhttps://www.youtube.com/channel/UCBgLDOR6wBwmSReAYJi0F9A");
+  if (msg == 'bad bot') {
+    message.reply("What did i do? Was it my multiple remarks about your breath?");
+  }
+  if (msg == 'no' || msg == 'yes') {
+    message.reply("I don't think that was a yes or no question...");
+  }
+  if (msg == 'it was') {
+    message.reply("It was? Oh my bad...");
+  }
+  if (msg == 'maybe') {
+    message.reply("Do you mean maybe-yes or maybe-no?");
+  }
+  if (msg == 'dam') {
+    message.reply('Ooh i know a good dam joke. \"Oh no, we\'ve got a damn hole! Geddit, a dam hole?\"');
+  }
+  if (msg == 'damn') {
+    message.reply('Ooh, i know a good joke abo-- Oh wait wrong dam...');
+  }
+  if (msg == 'yay') {
+    message.reply('YAY! :tada::tada: Wait, what are we celebrating?');
+  }
+  if (msg == 'shutup bot') {
+    message.reply("Why don't you do back to your work and ignore me instead?");
+  }
+  if (msg == 'tru') {
+    message.reply("You forgot the \'e\'");
+  }
+  if (msg == 'im lazy' || msg.startsWith('lazy')) {
+    message.reply('Welcome to the LAZY CLUB111');
+    message.reply('Whoops couldn\'t be bothered holding shift...');
+  }
+  if (msg == 'xd') {
+    message.reply('Giggle Giggle');
+  }
+  if (msg == 'punish bot') {
+    message.reply(`Ow! That hurt, that behaviour is not tolerated at ${message.guild.name} server, ${message.guild.id.slice(0, 4)}.`);
+  }
+  if (msg == 'fyi') {
+    message.reply('I already know everything, don\'t bother.');
+  }
+  if (msg == 'hw' || msg.startsWith('homework')) {
+    message.reply('If you don\'t do your homework, that\'ll be a synergetic!');
   }
 }

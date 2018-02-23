@@ -7,12 +7,12 @@ exports.run = (client, message, args) => {
   if (!message.member.hasPermission("MANAGE_GUILD")) {
     message.reply("You need the MANAGE_MESSAGES permission to enable chat bot...");
   }
-  if (op == 1) {
-    client.op.set(message.guild.id, 0);
-    message.reply("Bot chat disabled.");
-  } else {
+  if (op == 0) {
     client.op.set(message.guild.id, 1);
     message.reply("Bot chat enabled.");
+  } else {
+    client.op.set(message.guild.id, 0);
+    message.reply("Bot chat disabled.");
   }
 }
 

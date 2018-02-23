@@ -11,11 +11,11 @@ exports.run = (client, message, args) => {
 			icon_url: client.user.avatarURL
 			},
 			title: "Hey I'm The V01D Bot",
-			url: "https://www.youtube.com/channel/UC8JuoR6e2y_Edm1icqSrmqQ?view_as=subscriber?&ab_channel=Slimepig-V01DBREAKER",
+			url: "https://www.youtube.com/channel/UC8JuoR6e2y_Edm1icqSrmqQ",
 			description: "I was created by V01DBREAKER!",
 			fields: [{
 				name: "Want to add V01DBot to your server?",
-				value: "If you have Manage Server permissions for your guild, you can invite it here: [Invite](https://discordapp.com/api/oauth2/authorize?client_id=329191944167358474&scope=bot)"
+				value: "If you have Manage Server permissions for your guild, you can invite it here: [Invite](https://discordapp.com/api/oauth2/authorize?client_id=329191944167358474&scope=bot&permissions=104332359)"
 			},
 			{
 				name: "The V01D Discord",
