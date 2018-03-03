@@ -26,21 +26,18 @@ exports.run = (client, message, args) => {
 			}
 		});
 		if(args.length < 1) {
-			cmdList(system, client, message, args);
-			cmdList(fun, client, message, args);
-			cmdList(moderation, client, message, args);
-			cmdList(search, client, message, args);
-			message.reply("Sent you the command lists.");
+			message.reply("http://v01dbreaker.zapto.org/V01DBot/commands.html");
+			message.reply("To sort the commands by category try adding a catagory argument - system, moderation, fun, search")
 				console.log(`Sent ${message.author.username} at ${message.guild.name} command lists`);
 		} else {
 			if (args[0] == "system") {
-				cmdList(system, client, message, args);
+				cmdList(system, client, message);
 			} else if (args[0] == "fun") {
-				cmdList(fun, client, message, args);
+				cmdList(fun, client, message);
 			} else if (args[0] == "moderation") {
-				cmdList(moderation, client, message, args);
+				cmdList(moderation, client, message);
 			} else if (args[0] == "search") {
-				cmdList(search, client, message, args);
+				cmdList(search, client, message);
 			} else {
 				message.send("Unknown category");
 				return;
@@ -51,7 +48,7 @@ exports.run = (client, message, args) => {
 	});
 }
 
-function cmdList(cat, client, message, args) {
+function cmdList(cat, client, message) {
 	const embed = new Discord.RichEmbed()
 	.setColor("#3498db")
 	.setURL("http://v01dbreaker.comlu.com/V01DBot")

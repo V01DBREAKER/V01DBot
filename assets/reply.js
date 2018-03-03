@@ -15,6 +15,8 @@ exports.run = (client, message) => {
   const msg = message.content.toLowerCase();
   const args = msg.split(/ +/g);
 
+  if (!message.channel.permissionsFor(client.user).has("SEND_MESSAGES")) return;
+
   if (msg === 'hi' || msg === 'hey' || msg === 'hoi' || msg === 'hello') {
     message.reply(`Heyo what is up!\nWelcome to ${message.guild.name}\'s Diner!\nWhat would you like today sir/madam?\nWe have pasta or a burger on special today.`);
     message.reply('\`Psst, if you don\'t want a meal, just say no thankyou\`')

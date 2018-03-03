@@ -4,7 +4,10 @@ const fs = require("fs");
 const cheerio = require('cheerio');
 
 exports.run = (client, message, args) => {
-	if(args.length < 1) return message.reply("Please enter a search value.")
+	if(args.length < 1) {
+		message.reply("Please enter a search value.");
+		return;
+	};
 	var imgs = [];
   var search = args.toString();
 	search = search.replace(/,/g, " ");
@@ -12,22 +15,24 @@ exports.run = (client, message, args) => {
 	var url = `https://imgur.com/search?q=${search}`;
 	request(url, function(err, response, body) {
 		if(err) {
-            console.log(err);
-            return message.reply('Error getting Imgur search results.');
-        }
+      console.log(err);
+      message.reply('Error getting Imgur search results.');
+			return;
+    }
 		$ = cheerio.load(body);
 		var results = $('span[class=sorting-text-align]').children('i').text();
 		results = results.replace(/,/g, "");
 		if(results < 5) {
 			console.log(`No results found for ${search}.`);
-			return message.reply("No results found.");
+			message.reply("No results found.");
+			return;
 		} else {
 			message.channel.send(`${results} results found.\nDisplaying 5 results.`);
 			var Mresults = $('a[class=image-list-link]').children().map(function(i, el) {
 				return $(this).attr('src');
 			}).get().join(' ').replace(/\/\//g, "https://").split(" ").slice(1, 6);
 			let x = 0;
-			for(; x < 5; x++);
+			for(; x < 5; x++)
 			{
 				Mresults[x] = Mresults[x].replace('b.', '.');
 			}

@@ -5,7 +5,8 @@ const fs = require("fs");
 exports.run = (client, message, args) => {
   let op = client.op.get(message.guild.id);
   if (!message.member.hasPermission("MANAGE_GUILD")) {
-    message.reply("You need the MANAGE_MESSAGES permission to enable chat bot...");
+    message.reply("You need the MANAGE_GUILD permission to enable chat bot...");
+    return;
   }
   if (op == 0) {
     client.op.set(message.guild.id, 1);
