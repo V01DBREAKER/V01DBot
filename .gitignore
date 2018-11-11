@@ -4,3 +4,4 @@ nodemon.json
 SelfBot.js
 SelfStart
 data/
+node_modules/
