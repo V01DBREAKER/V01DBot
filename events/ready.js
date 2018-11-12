@@ -3,7 +3,12 @@ const fs = require("fs");
 exports.run = (client) => {
 	console.log(`Ready to server in ${client.channels.size} channels on ${client.guilds.size} servers, for a total of ${client.users.size} users.`);
 	console.log(Date().toString());
-	
+	if (!client.op.get('muted')){
+		client.op.set('muted', [])
+	}
+	if (!client.op.get('slow')){
+		client.op.set('slow', [])
+	}
 	let g = [];
 	client.guilds.forEach(function(el){
     g.push(el.name);

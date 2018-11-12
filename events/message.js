@@ -52,7 +52,7 @@ exports.run = (client, message) => {
     }, slowTime);
   }
   
-  let prefixes = [config.prefix, client.op.get(message.guild.id)[2]];
+  let prefixes = [config.prefix, client.op.get(message.guild.id).prefix];
   let prefix;
   if (prefixes[1] == undefined) {
     prefix = prefixes[0]
