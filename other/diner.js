@@ -4,7 +4,6 @@ const Enmap = require('enmap');
 
 exports.run = (client, message) => {
   const talk = client.talk;
-  const money = client.money;
 
   let opS = client.op.get(message.guild.id);
   if (opS[0] == 0) return;
@@ -99,22 +98,18 @@ exports.run = (client, message) => {
       message.channel.send(`***Bill***\n.\n.\nTotal Cost: $15`);
       message.reply("That will be $15\nThankyou sir/madame.\nHave a nice day, come back next time!");
       talk.set(diner, "0");
-      pay(message, money, 15)
     }
     if (op == 4) {
       message.reply("That's 4 dollars, for that whisky.\nHave a nice day, don't drink and drive!");
       talk.set(diner, "0");
-      pay(message, money, 4)
-    }
+     }
     if (op == 5) {
       message.reply("Enjoyed the juice? Its 2 dollars.\nHave a nice day kiddo!");
       talk.set(diner, "0");
-      pay(message, money, 2)
-    }
+      }
     if (op == 6) {
       message.reply("Well you came for water during peak hour. *sigh*\nSorry, but i'll have to charge you a dollar service fee.\nMy boss is cheap...");
       talk.set(diner, "0");
-      pay(message, money, 1)
     }
   }
   if (msg == 'chef' || msg == 'chef!') {
@@ -124,42 +119,17 @@ exports.run = (client, message) => {
       message.reply("That will be $15\nThankyou sir/madame.\nIt wasn't much! \`More Food Wars References\`");
       message.channel.send("Chef, use the diner's catchphrase, not your own!");
       talk.set(diner, "0");
-      pay(message, money, 15)
     }
     if (op == 4) {
       message.reply("That's 4 dollars, for that whisky.\nThat's my family home brewed whisky, the crunchy bits add flavour!.");
-      pay(message, money, 4)
     }
     if (op == 5) {
       message.reply("Enjoyed the juice? Its 2 dollars.\nSee you around kiddo. \`- Han Solo\`");
       talk.set(diner, "0");
-      pay(message, money, 2)
     }
     if (op == 6) {
       message.reply("Well you came for water during peak hour. I'll have to charge you as a service fee.\nWe're in debt right now...");
       talk.set(diner, "0");
-      pay(message, money, 1)
     }
-  }
-}
-
-function pay(message, money, price){
-  let cash = money.get(message.author.id);
-  if (cash == undefined) {
-    money.set(message.author.id, [50, Date.now()]);
-		message.reply("A newbie I see, well you had no money to pay for this.\nDon't worry you aren't doing dish duty, instead i've signed you up for a V01DBit bank account it includes 50 V01DBits to begin with.\nYou're welcome! But this meal will cost you double because we had to setup the account for you. Cheers!");
-    let cash = money.get(message.author.id);
-    cash[0] = money.get(message.author.id)[0] - (price * 2);
-    money.set(message.author.id, cash)
-    return;
-  }
-  cash[0] = money.get(message.author.id)[0] - price;
-  money.set(message.author.id, cash);
-}
-
-function check(message, money, price){
-  if (money.get(message.author.id)[0] < price) {
-    message.reply('Sorry sir, but you don\'t have enough money to pay for this. I\'m going to have to ask you to leave.');
-    return true;
   }
 }

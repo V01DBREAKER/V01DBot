@@ -5,8 +5,8 @@ var path = require('path');
 var scriptName = path.basename(__filename).split(".")[0];
 
 exports.run = (client, message, args) => {
-	var option = client.op.get(message.guild.id);
-	if (option[1][option[1].findIndex(function(el){return el = scriptName})][1] == 0) return;
+    var option = client.op.get(message.guild.id)[scriptName];
+	if (option != undefined && option == 0) return;
 	if(args.length < 1) return message.reply("Please enter IP Address to search");
 	var mcargs = args[0].split(":");
 	var mcIP = mcargs[0]; // Your MC server IP

@@ -5,8 +5,8 @@ var path = require('path');
 var scriptName = path.basename(__filename).split(".")[0];
 
 exports.run = (client, message, args) => {
-	var option = client.op.get(message.guild.id);
-	if (option[1][option[1].findIndex(function(el){return el = scriptName})][1] == 0) return;
+	var option = client.op.get(message.guild.id)[scriptName];
+	if (option != undefined && option == 0) return;
 	const Discord = require("discord.js");
 	var skin;
 	var size;
@@ -16,7 +16,7 @@ exports.run = (client, message, args) => {
 	} else {
 		if (args[1] == undefined) {
 			skin = "classic";
-		} else if (args[1] == "tall" || args[1] == "classic" || args[1] == "face" || args[1] == "round" || args[1] == "default") {
+		} else if (['tall', 'classic', 'face', 'round', 'default'].includes(args[1])) {
 			skin = args[1];
 		} else {
 			message.reply("Type unknown...");
@@ -24,7 +24,7 @@ exports.run = (client, message, args) => {
 		};
 		if (args[2] == undefined) {
 			size = "80";
-		} else if (args[2] == "20" || args[2] == "40" || args[2] == "60" || args[2] == "80" || args[2] == "90" || args[2] == "100") {
+		} else if (['20','40','60','80','90','100'].includes(args[2])) {
 			size = args[2];
 		} else {
 			message.reply("Size unknown...");
@@ -32,7 +32,7 @@ exports.run = (client, message, args) => {
 		};
 		if (args[3] == undefined) {
 			border = "2";
-		} else if (args[3] == "1" || args[3] == "2" || args[3] == "3" || args[3] == "4") {
+		} else if (['1','2','3','4'].includes(args[3])) {
 			border = args[3];
 		} else {
 			message.reply("Border size unknown...")
@@ -57,5 +57,5 @@ exports.help = {
 	name: "McMini",
 	category: "Search",
 	description: "Search for a Minecraft user's Minime",
-	usage: "\`mcmini [username] type:[tall/classic/face/round/default] size:[20/40/60/80/90/100] border:[1/2/3/4]\`"
+	usage: "\`mcmini <username> type:[tall/classic/face/round/default] size:[20/40/60/80/90/100] border:[1/2/3/4]\`"
 }

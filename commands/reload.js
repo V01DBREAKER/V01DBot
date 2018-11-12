@@ -15,5 +15,5 @@ exports.help = {
 	name: "Reload",
 	category: "System",
 	description: "This command reloads a command for bug testing.",
-	usage: "\`reload [command]\`"
+	usage: "\`reload <command>\`"
 }

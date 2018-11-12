@@ -10,7 +10,7 @@ exports.run = (client, message) => {
     return;
   }
   if (client.op.get(message.guild.id) == undefined) {
-    client.op.set(message.guild.id, [1,[[],[]]]);
+    client.op.set(message.guild.id, {'chat':1});
   };
 
   //mute command

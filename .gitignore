@@ -1,7 +1,13 @@
 config.json
+
 musicexample.js
+
 nodemon.json
+
 SelfBot.js
-SelfStart
-data/
 node_modules/
+
+
+SelfStart
+
+data/

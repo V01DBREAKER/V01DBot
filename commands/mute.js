@@ -5,8 +5,8 @@ var path = require('path');
 var scriptName = path.basename(__filename).split(".")[0];
 
 exports.run = (client, message, args) => {
-	var option = client.op.get(message.guild.id);
-	if (option[1][option[1].findIndex(function(el){return el = scriptName})][1] == 0) return;
+	var option = client.op.get(message.guild.id)[scriptName];
+	if (option != undefined && option == 0) return;
 
 	if (!message.guild.me.hasPermission("MANAGE_MESSAGES")) {
 		message.reply("Bot has insufficent permissions")
@@ -47,5 +47,5 @@ exports.help = {
 	name: "Mute",
 	category: "Moderation",
 	description: "Mutes the user in the channel",
-	usage: "\`mute [@user]\`"
+	usage: "\`mute <@user>\`"
 }

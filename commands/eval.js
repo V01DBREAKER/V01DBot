@@ -26,5 +26,5 @@ exports.help = {
 	name: "Eval",
 	category: "System",
 	description: "Evaluate Javascript, Owner ONLY!",
-	usage: "\`eval [code]\`"
+	usage: "\`eval <code>\`"
 }

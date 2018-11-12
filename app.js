@@ -7,7 +7,6 @@ const Enmap = require('enmap');
 client.slowTalk = new Set();
 client.op = new Enmap({name: "options", autoFetch: true, fetchAll: false});
 client.talk = new Enmap({name: 'talk'});
-client.money = new Enmap({name: "money", autoFetch: true, fetchAll: true});
 
 // This loop reads the /events/ folder and attaches each event file to the appropriate event.
 fs.readdir("./events/", (err, files) => {
