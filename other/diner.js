@@ -23,8 +23,7 @@ exports.run = (client, message) => {
     talk.set(diner, "1");
   }
   if (msg === 'pasta') {
-    if (check(message, money, 15)) return;
-    let op = talk.get(diner);
+      let op = talk.get(diner);
     if (op != 1) return;
     message.channel.send("Chef, we have a pasta order at table 4");
     message.reply("Well, imma make a the pasta for you today! \`A Lord Pos Pos Quote\`");
@@ -35,7 +34,6 @@ exports.run = (client, message) => {
     talk.set(diner, "2");
   }
   if (msg === 'burger') {
-    if (check(message, money, 15)) return;
     let op = talk.get(diner);
     if (op != 1) return;
     message.reply("Well i see, i burger...\nNo probs, coming right up.");
@@ -47,7 +45,6 @@ exports.run = (client, message) => {
     talk.set(diner, "2");
   }
   if (msg === 'pizza') {
-    if (check(message, money, 15)) return;
     let op = talk.get(diner);
     if (op != 1) return;
     message.reply("Sorry but since our pizza menu is still under construction, there\’s only margarita pizza, hope you don’t mind");
@@ -74,19 +71,16 @@ exports.run = (client, message) => {
     }
   }
   if (msg == 'whisky') {
-    if (check(message, money, 4)) return;
     message.reply("Sure thing mate, don't drink too much!");
     message.channel.send("\`Psst, if you\'re finished drinking, call the waiter or chef up!\`");
     talk.set(diner, "4");
   }
   if (msg == 'juice') {
-    if (check(message, money, 2)) return;
     message.reply("We mainly serve this to little kids, but sure...");
     message.channel.send("\`Psst, if you\'re finished drinking, call the waiter or chef up!\`");
     talk.set(diner, "5");
   }
   if (msg == 'water') {
-    if (check(message, money, 1)) return;
     message.reply("Ah yes, plain old water, the basis for any drink...\nAre you sure you don't want any flavour with that?\nNo? Alright");
     message.channel.send("\`Psst, if you\'re finished drinking, call the waiter or chef up!\`");
     talk.set(diner, "6");
