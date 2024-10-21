@@ -1,7 +1,5 @@
 # V01DBot
 
-A Discord Bot
+A Discord Bot for personal use, 
 
-Lots of weird things it can do!
-
-Version 1.0 complete!
+Archived version runs on discord.js v11.5.1

@@ -1,13 +1,3 @@
 config.json
-
-musicexample.js
-
-nodemon.json
-
-SelfBot.js
-node_modules/
-
-
-SelfStart
-
-data/
+node_modules
+package-lock.json

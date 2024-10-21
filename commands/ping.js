@@ -1,14 +1,10 @@
-const config = require("../config.json");
-const Discord = require("discord.js");
-const fs = require("fs");
+const { SlashCommandBuilder } = require('discord.js');
 
-exports.run = (client, message, args) => {
-  message.channel.send(`Pong! V01DBot Latency is ${Math.round(client.ping)}ms.`);
-}
-
-exports.help = {
-	name: "Ping",
-	category: "System",
-	description: "Ping Pong! Discover the latency of the bot.",
-	usage: "\`ping\`"
-}
+module.exports = {
+	data: new SlashCommandBuilder()
+		.setName('ping')
+		.setDescription('Replies with Pong!'),
+	async execute(interaction) {
+		await interaction.reply('Pong!');
+	},
+};

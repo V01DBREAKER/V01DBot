@@ -1,22 +1,50 @@
-const Discord = require("discord.js");
-const client = new Discord.Client();
-const config = require("./config.json");
-const fs = require('fs');
-const Enmap = require('enmap');
+const fs = require('node:fs');
+const path = require('node:path');
 
-client.slowTalk = new Set();
-client.op = new Enmap({name: "options", autoFetch: true, fetchAll: false});
-client.talk = new Enmap({name: 'talk'});
+const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 
-// This loop reads the /events/ folder and attaches each event file to the appropriate event.
-fs.readdir("./events/", (err, files) => {
-  if (err) return console.error(err);
-  files.forEach(file => {
-    let eventFunction = require(`./events/${file}`);
-    let eventName = file.split(".")[0];
-    // super-secret recipe to call events with all their proper arguments *after* the `client` var.
-    client.on(eventName, (...args) => eventFunction.run(client, ...args));
-  });
+const { acceptedGuilds, token } = require('./config.json');
+
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+
+// load commands
+client.commands = new Collection();
+const commandPath = path.join(__dirname, 'commands');
+const commandFolder = fs.readdirSync(foldersPath);
+
+//for (const folder of commandFolders) { // use for later
+	//const commandsPath = path.join(foldersPath, folder);
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+// load each command in folder
+for (const file of commandFiles) {
+    const filePath = path.join(commandsPath, file);
+    const command = require(filePath);
+    client.commands.set(command.data.name, command);
+}
+
+// client is loaded event
+client.once(Events.ClientReady, readyClient => {
+	console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 });
 
-client.login(config.token);
+// run commands
+client.on(Events.InteractionCreate, async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+    if (!acceptedGuilds.includes(interaction.guildId)) return;
+
+    const command = interaction.client.commands.get(interaction.commandName)
+    if (!command) return;
+
+    try {
+		await command.execute(interaction);
+	} catch (error) {
+		console.error(error);
+		if (interaction.replied || interaction.deferred) {
+			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+		} else {
+			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+		}
+	}
+});
+
+client.login(token);
