@@ -3,9 +3,15 @@ const path = require('node:path');
 
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 
-const { acceptedGuilds, token } = require('./config.json');
+const { acceptedGuilds, token, ownerId } = require('./config.json');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
+
+// for music playing
+client.music = new Collection();
+for (const guild of acceptedGuilds) {
+    client.music.set(guild, null)
+}
 
 // load commands
 client.commands = new Collection();
@@ -30,12 +36,13 @@ client.once(Events.ClientReady, readyClient => {
 
 // run commands
 client.on(Events.InteractionCreate, async interaction => {
+    // https://discord.js.org/docs/packages/discord.js/main/ChatInputCommandInteraction:Class
     if (!interaction.isChatInputCommand()) return;
     if (!acceptedGuilds.includes(interaction.guildId)) return;
 
     const command = interaction.client.commands.get(interaction.commandName)
     if (!command) return;
-
+    if (command.isAdmin && interaction.member.id != ownerId) return;
     try {
 		await command.execute(interaction);
 	} catch (error) {
