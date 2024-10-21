@@ -5,6 +5,11 @@
   "main": "app.js",
   "author": "V01DBREAKER",
   "license": "ISC",
+  "scripts": {
+    "deploy": "node deploy.js",
+    "app": "node app.js",
+    "main": "npm run deploy && npm run app"
+  },
   "dependencies": {
     "discord.js": "^14.16.3"
   }

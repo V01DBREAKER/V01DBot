@@ -9,11 +9,12 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 // load commands
 client.commands = new Collection();
-const commandPath = path.join(__dirname, 'commands');
-const commandFolder = fs.readdirSync(foldersPath);
+const commandsPath = path.join(__dirname, 'commands');
 
-//for (const folder of commandFolders) { // use for later
+//const commandFolder = fs.readdirSync(commandsPath);
+//for (const folder of commandFolders) { 
 	//const commandsPath = path.join(foldersPath, folder);
+    
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 // load each command in folder
 for (const file of commandFiles) {
