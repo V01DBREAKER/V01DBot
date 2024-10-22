@@ -5,12 +5,14 @@ const dv = require('@discordjs/voice');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('stop')
-		.setDescription('[WIP] stops all playing audio.'),
+		.setDescription('Stops the music and disconnects the bot.'),
 	async execute(interaction) {
-        const connection = await dv.getVoiceConnection(interaction.member.voice.channel.guild.id);
-        if (connection) {
-            connection.destroy();  // Disconnect the bot
+        let jukebox = interaction.client.music.get(interaction.guildId);
+        if (!jukebox){
+            interaction.reply("Nothing currently playing.")
+        } else {
+            jukebox.stop()
+            interaction.reply("Disconnected from voice channel.")
         }
-        await interaction.reply("Disconnected from voice channel.")
 	},
 };

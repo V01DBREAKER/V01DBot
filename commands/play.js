@@ -34,9 +34,8 @@ async function playYT(interaction){
         interaction.client.music.set(interaction.guildId, jukebox);
     }
     
-    let [inQueue, title] = await jukebox.add(streamURL)
-    console.log(jukebox.playlist)
-    if (inQueue){
+    let [isPlaying, title] = await jukebox.add(streamURL)
+    if (isPlaying){
         return `Added \`${title}\` to playlist.`
     }
     return `Now playing: \`${title}\``;
