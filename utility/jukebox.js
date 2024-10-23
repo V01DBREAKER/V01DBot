@@ -5,7 +5,7 @@ const { PassThrough } = require('stream');
 const cp = require('child_process');
 
 module.exports = class Jukebox {
-    constructor(client, channel, url){
+    constructor(client, channel){
         this.playlist = []
 
         this.client = client
@@ -35,8 +35,10 @@ module.exports = class Jukebox {
     async play() {
         if (this.playlist.length < 1) return null;
         
-        this.stream = ytStream(this.playlist[0]);
-        this.resource = dv.createAudioResource(this.stream, {inlineVolume: true});
+        const { pass1: ffmpegStream, pass2: outStream } = duplicateStream(ytStream(this.playlist[0]));
+        this.stream = ffmpegStream
+
+        this.resource = dv.createAudioResource(outStream, {inlineVolume: true});
         this.resource.volume.setVolume(0.5);
 
         this.player.play(this.resource);
@@ -59,21 +61,34 @@ module.exports = class Jukebox {
         this.client.music.set(this.guildId, null); // destroy jukebox
     }
 
-    async addSoundEffect(effectPath) {
-        // if jukebox exists, something is playing
-        const effect = localStream(effectPath);
-        const effectResource = dv.createAudioResource(effectPath);
-        const yt = this.resource.playStream;
-        const ongoingPassthrough = new PassThrough();
-        yt.pipe(ongoingPassthrough);
+    addSoundEffect(effectPath) {
+        const effectStream = fs.createReadStream(effectPath);      
+        
+        const ffmpeg = cp.spawn('ffmpeg', [
+            '-i', 'pipe:0',    // First input (YouTube stream - stdin)
+            '-i', 'pipe:3',    // Second input (New sound stream - stdio[3])
+            '-filter_complex', '[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=3',
+            '-f', 'mp3',       // output format
+            'pipe:1',          // Output to stdout (Discord stream)
+        ], {
+            stdio: ['pipe', 'pipe', 'pipe', 'pipe'] // Define stdio pipes
+        });
 
-        const merge = mixStreams(ongoingPassthrough, effect);
-        const mergeResource = dv.createAudioResource(merge);
-        this.player.play(mergeResource); // switch to merged stream
+        this.stream.pipe(ffmpeg.stdin);
+        effectStream.pipe(ffmpeg.stdio[3]);
+        
+        const mixedResource = dv.createAudioResource(ffmpeg.stdout, {inlineVolume: true});
+        mixedResource.volume.setVolume(0.5);
+        this.player.play(mixedResource);
 
-        effectResource.playStream.on('end', () => {
-            ytResource = dv.createAudioResource(this.resource.playStream)
-            this.player.play(ytResource);  // Revert back to YouTube stream
+        ffmpeg.on('error', (error) => {
+            console.error(`FFmpeg error: ${error.message}`);
+        });
+
+        ffmpeg.on('close', (code) => {
+            if (code !== 0) {
+                console.error(`FFmpeg process exited with code ${code}`);
+            }
         });
     }
 }
@@ -86,37 +101,27 @@ function ytStream(url) {
     });
 }
 
-function localStream(filePath) {
-    const stream = new PassThrough();
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(stream);
-    return stream;
-}
+function duplicateStream(originalStream) {
+    const pass1 = new PassThrough();
+    const pass2 = new PassThrough();
 
-function mixStreams(ongoingStream, newStream) {
-    // Create passthrough streams for both the YouTube and new sound streams
-    const mergedStream = new PassThrough();
-
-    // Setup the ffmpeg process with the necessary arguments to mix the streams
-    const f = cp.spawn('ffmpeg', [
-        '-i', 'pipe:3',    // First input (YouTube stream - stdin)
-        '-i', 'pipe:4',    // Second input (New sound stream - stdin)
-        '-filter_complex', 'amerge', // Combine both audio sources
-        '-ac', '2',        // Ensure 2 audio channels (stereo)
-        '-f', 's16le',     // Output format (16-bit little-endian PCM)
-        '-ar', '48000',    // Audio sampling rate
-        'pipe:1',          // Output to stdout (Discord stream)
-    ], {
-        stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe'] // Define stdio pipes
+    // Pipe the original stream to both pass-throughs
+    originalStream.on('data', (chunk) => {
+        pass1.write(chunk);  // Write to pass1
+        pass2.write(chunk);  // Write to pass2
     });
 
-    // Pipe both the YouTube and new streams into the ffmpeg process via stdin
-    ongoingStream.pipe(f.stdio[3]);  // First audio input (pipe:0)
-    newStream.pipe(f.stdio[4]);      // Second audio input (pipe:1)
+    // Handle end event
+    originalStream.on('end', () => {
+        pass1.end();  // Close pass1
+        pass2.end();  // Close pass2
+    });
 
-    // Pipe the merged ffmpeg output stream to the passthrough stream
-    f.stdout.pipe(mergedStream);
+    // Handle error events
+    originalStream.on('error', (err) => {
+        pass1.destroy(err); // Destroy pass1 on error
+        pass2.destroy(err); // Destroy pass2 on error
+    });
 
-    // Return the merged audio stream
-    return mergedStream;
+    return { pass1, pass2 };
 }
