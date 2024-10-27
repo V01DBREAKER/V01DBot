@@ -9,7 +9,7 @@ module.exports = {
 
         let jukebox = interaction.client.music.get(interaction.guildId);
         if (jukebox) {
-            //return [false, "Bot is currently playing music..."];
+            return [false, "Bot is currently playing music..."];
             const audioFile = path.join(__dirname, '../assets', sound + '.mp3');
             jukebox.addSoundEffect(audioFile)
             return [true, "Played sound over music."];
