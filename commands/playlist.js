@@ -8,16 +8,22 @@ module.exports = {
     aliases: ["queue"],
 	async execute(interaction) {
         const jukebox = interaction.client.music.get(interaction.guildId);
+        if (!jukebox){
+            await interaction.reply("Nothing playing at the moment.")
+            return;
+        }
         const playlist = jukebox.getNextUp();
-        var body = []
-        for (const disc in playlist){
+        const body = [];
+        for (const disc of playlist){
+            console.log(playlist)
             body.push({
                 title: disc.title,
+                description: `**Duration:** ${formatTime(disc.length)}`,
                 thumbnail: {
-                  url: disc.thumbnail
+                    url: disc.thumbnail
                 }
             })
-        }
-        interaction.channel.send({embeds: body})
+        };
+        await interaction.reply({embeds: body});
 	},
 };

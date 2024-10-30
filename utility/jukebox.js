@@ -21,18 +21,18 @@ class Jukebox {
         console.log(`Created jukebox at: ${channel.id}`);
     }
 
-    add(url) {
-        const info = ytdl.getInfo(url);
+    async add(url) {
+        const info = await ytdl.getInfo(url);
         const disc = new Disc(url, info);
         this.playlist.push(disc)
         if (this.playlist.length < 2){
+            this.play();
             return [false, disc];
         }
-        this.play();
         return [true, disc];
     }
     
-    play() {
+    async play() {
         if (this.playlist.length < 1) return null;
         
         const ytStream = this.ytStream(this.playlist[0].url);

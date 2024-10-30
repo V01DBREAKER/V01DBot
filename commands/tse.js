@@ -5,6 +5,7 @@ const dv = require('@discordjs/voice');
 const fs = require('fs');
 const { PassThrough } = require('stream');
 const cp = require('child_process');
+const { formatTime } = require('../utility/format')
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -18,19 +19,22 @@ module.exports = {
 
         const jukebox = interaction.client.music.get(interaction.guildId);
         if (!jukebox){
-            interaction.channel.send("Nothing playing at the moment.")
+            await interaction.reply("Nothing playing at the moment.")
+            return;
         }
         const playlist = jukebox.getNextUp();
         const body = [];
-        for (const disc in playlist){
+        for (const disc of playlist){
+            console.log(playlist)
             body.push({
                 title: disc.title,
+                description: `**Duration:** ${formatTime(disc.length)}`,
                 thumbnail: {
                     url: disc.thumbnail
                 }
             })
         };
-        interaction.channel.send({embeds: body});
+        await interaction.reply({embeds: body});
         return;
 
         /// command for testing overlaying sounds on demand
