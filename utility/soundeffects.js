@@ -16,9 +16,9 @@ module.exports = {
         },
     ],
 
-    getChoices(effects) {
+    getChoices() {
         out = []
-        for (effect of effects) {
+        for (effect of this.effects) {
             out.push({name: effect.name, value: effect.value})
         }
         return out

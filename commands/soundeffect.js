@@ -13,7 +13,8 @@ module.exports = {
             option.setName('option')
                 .setDescription('Pick a sound effect.')
                 .setRequired(true)
-                .addChoices(soundEffects.getChoices(soundEffects.effects))
+                .addChoices(soundEffects.getChoices())
+                //.addChoices(...soundEffects.getChoices().map(choice => ({name: choice.name, value: choice.value})))
         ),
 	async execute(interaction) {
         const name = interaction.options.getString('option')
