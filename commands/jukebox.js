@@ -21,12 +21,18 @@ module.exports = {
                 .setDescription('Stops the music and disconnects the bot.'))
         .addSubcommand(playlist => 
             playlist.setName('playlist')
-                .setDescription('[WIP] Displays the song queue.')),
+                .setDescription('Displays the song queue.'))
+        .addSubcommand(skip => 
+            skip.setName('skip')
+                .setDescription('Skips the current song.'))
+        .addSubcommand(nowplaying => 
+            nowplaying.setName('nowplaying')
+                .setDescription('Get information about the current song.')),
 	async execute(interaction) {
         await interaction.deferReply();
-        let reply;
 		const subcommand = interaction.options.getSubcommand()
-        switch (subcommand) {
+        //let reply = await eval(subcommand + "(interaction)");
+        switch (subcommand) { // i would use eval for this but idk tbh
             case 'play':
                 reply = await play(interaction);
                 break;
@@ -34,8 +40,13 @@ module.exports = {
                 reply = stop(interaction);
                 break;
             case 'playlist':
-                reply = playlist(interaction)
+                reply = playlist(interaction);
                 break;
+            case 'skip':
+                reply = skip(interaction);
+                break;
+            case 'nowplaying':
+                reply = nowPlaying(interaction)
         }
         interaction.editReply(reply);
 	},
@@ -65,19 +76,14 @@ async function play(interaction){
 
 function stop(interaction){
     let jukebox = interaction.client.music.get(interaction.guildId);
-    if (!jukebox){
-        return "Nothing currently playing.";
-    } else {
-        jukebox.stop();
-        return "Disconnected from voice channel.";
-    }
+    if (!jukebox) return "Nothing currently playing.";
+    jukebox.stop();
+    return "Disconnected from voice channel.";
 }
 
-function playlist(interaction){
-    const jukebox = interaction.client.music.get(interaction.guildId);
-    if (!jukebox){
-        return "Nothing playing at the moment.";
-    }
+function playlist(interaction) {
+    let jukebox = interaction.client.music.get(interaction.guildId);
+    if (!jukebox) return "Nothing currently playing.";
     const playlist = jukebox.getNextUp();
     const body = [];
     for (const disc of playlist){
@@ -89,6 +95,22 @@ function playlist(interaction){
             }
         })
     };
-    interaction.channel.send({embeds: body})
-    return "In queue:";
+    return {embeds: body};
+}
+
+function skip(interaction) {
+    let jukebox = interaction.client.music.get(interaction.guildId);
+    if (!jukebox) return "Nothing currently playing.";
+    const over = jukebox.skip();
+    if (over) {
+        return "No audio left to play."
+    }
+    return `Skipped to next audio.`
+}
+
+function nowplaying(interaction) {
+    let jukebox = interaction.client.music.get(interaction.guildId);
+    if (!jukebox) return "Nothing currently playing.";
+    const disc = jukebox.getCurrent();
+    return `Currently playing: \`${disc.title}\``
 }

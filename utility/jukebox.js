@@ -43,11 +43,7 @@ class Jukebox {
         this.player.play(this.resource);
 
         this.player.on(dv.AudioPlayerStatus.Idle, () => {
-            this.playlist.shift();
-            const next = this.play();
-            if (!next) {
-                this.stop()
-            }
+            this.next();
         });
         return this.playlist[0];
     }
@@ -58,6 +54,24 @@ class Jukebox {
         this.client.music.set(this.guildId, null); // destroy jukebox
     }
 
+    next() {
+        this.playlist.shift();
+        const next = this.play();
+        if (!next) {
+            this.stop();
+        }
+    }
+
+    skip() {
+        if (this.playlist.length < 2){
+            this.stop();
+            return true
+        } else {
+            this.next();
+            return false
+        }
+    }
+
     ytStream(url) {
         return ytdl(url, {
             filter: 'audioonly',
@@ -65,6 +79,10 @@ class Jukebox {
             dlChunkSize: 0,
             highWaterMark: 1 << 25
         });
+    }
+
+    getCurrent(){
+        return this.playlist[0]
     }
 
     getNextUp(){
