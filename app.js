@@ -27,11 +27,11 @@ for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file);
     const command = require(filePath);
     client.commands.set(command.data.name, command);
-    if (command.aliases) {
+    /*if (command.aliases) {
         for (const alias of command.aliases){
             client.commands.set(alias, command);
         }
-    }
+    }*/
 }
 
 // client is loaded event

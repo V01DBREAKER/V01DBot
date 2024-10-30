@@ -20,13 +20,13 @@ for (const file of commandFiles) {
         adminCommands.push(command.data.toJSON());
     } else {
         commands.push(command.data.toJSON());
-		if (command.aliases) {
+		/*if (command.aliases) {
 			for (const alias of command.aliases){
 				const aliasData = command.data
 				aliasData.setName(alias)
 				commands.push(aliasData.toJSON());
 			}
-		}
+		}*/
     }
 }
 

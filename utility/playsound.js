@@ -10,7 +10,7 @@ module.exports = {
         let jukebox = interaction.client.music.get(interaction.guildId);
         if (jukebox) {
             return [false, "Bot is currently playing music..."];
-            const audioFile = path.join(__dirname, '../assets', sound + '.mp3');
+            const audioFile = path.join(__dirname, '../assets', sound);
             jukebox.addSoundEffect(audioFile)
             return [true, "Played sound over music."];
         } else {
@@ -22,7 +22,7 @@ module.exports = {
             console.log(`Connected to voice channel: ${channel.id}`);
 
             const player = dv.createAudioPlayer();
-            const audioFile = path.join(__dirname, '../assets', sound + '.mp3');
+            const audioFile = path.join(__dirname, '../assets', sound);
             const resource = dv.createAudioResource(audioFile);
 
             player.play(resource)

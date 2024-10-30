@@ -9,11 +9,11 @@ const { formatTime } = require('../utility/format')
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('tse')
-		.setDescription('testmixingsounds')
-        .addBooleanOption(option =>
-            option.setName('stop')
-                .setDescription('Whether to stop')
+		.setName('test')
+		.setDescription('testingstuff')
+        .addStringOption(option =>
+            option.setName('option')
+                .setDescription('generic option')
         ),
 	async execute(interaction) {
 
