@@ -2,6 +2,7 @@ const path = require('node:path');
 const { SlashCommandBuilder } = require('discord.js');
 const dv = require('@discordjs/voice');
 const ytdl = require('@distube/ytdl-core');
+const ytpl = require('ytpl');
 const { Jukebox } = require('../utility/jukebox');
 const { formatTime } = require('../utility/format');
 
@@ -46,7 +47,8 @@ module.exports = {
                 reply = skip(interaction);
                 break;
             case 'nowplaying':
-                reply = nowPlaying(interaction)
+                reply = nowplaying(interaction)
+                break;
         }
         interaction.editReply(reply);
 	},
@@ -57,21 +59,39 @@ async function play(interaction){
     if (!channel) return "You must be in a voice channel!";
     if (!channel.speakable) return "Cannot join channel.";
 
-    const streamURL = interaction.options.getString('url')
-    if (!ytdl.validateURL(streamURL)) {
+    const url = interaction.options.getString('url')
+    if (ytdl.validateURL(url)) {
+        let jukebox = interaction.client.music.get(interaction.guildId);
+        if (!jukebox){
+            jukebox = new Jukebox(interaction.client, channel);
+            interaction.client.music.set(interaction.guildId, jukebox);
+        }
+        
+        let [isPlaying, disc] = await jukebox.add(url)
+        if (isPlaying){
+            return `Added \`${disc.title}\` to playlist.`
+        }
+        return `Now playing: \`${disc.title}\``;
+    } else if (ytpl.validateID(url)) {
+        let jukebox = interaction.client.music.get(interaction.guildId);
+        if (!jukebox){
+            jukebox = new Jukebox(interaction.client, channel);
+            interaction.client.music.set(interaction.guildId, jukebox);
+        }
+
+        const listInfo = await ytpl(url);
+        for (const item of listInfo.items){
+            jukebox.add(item.shortUrl);
+        }
+        return {embeds:[{
+            title: listInfo.title,
+            description: `**Songs:** ${listInfo.estimatedItemCount}, Description:\n${listInfo.description}`,
+            thumbnail: {url: listInfo.bestThumbnail.url}
+        }]}
+        
+    } else {
         return 'Please provide a valid YouTube URL.';
     }
-    let jukebox = interaction.client.music.get(interaction.guildId);
-    if (!jukebox){
-        jukebox = new Jukebox(interaction.client, channel);
-        interaction.client.music.set(interaction.guildId, jukebox);
-    }
-    
-    let [isPlaying, disc] = await jukebox.add(streamURL)
-    if (isPlaying){
-        return `Added \`${disc.title}\` to playlist.`
-    }
-    return `Now playing: \`${disc.title}\``;
 }
 
 function stop(interaction){
