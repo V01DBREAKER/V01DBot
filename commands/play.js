@@ -2,7 +2,7 @@ const path = require('node:path');
 const { SlashCommandBuilder } = require('discord.js');
 const dv = require('@discordjs/voice');
 const ytdl = require('@distube/ytdl-core');
-const Jukebox = require('../utility/jukebox');
+const { Jukebox } = require('../utility/jukebox');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -14,8 +14,9 @@ module.exports = {
                 .setRequired(true)
         ),
 	async execute(interaction) {
+		await interaction.deferReply();
         const sound = await playYT(interaction);
-		await interaction.reply(sound);
+        interaction.editReply(sound)
 	},
 };
 
@@ -34,9 +35,9 @@ async function playYT(interaction){
         interaction.client.music.set(interaction.guildId, jukebox);
     }
     
-    let [isPlaying, title] = await jukebox.add(streamURL)
+    let [isPlaying, disc] = await jukebox.add(streamURL)
     if (isPlaying){
-        return `Added \`${title}\` to playlist.`
+        return `Added \`${disc.title}\` to playlist.`
     }
-    return `Now playing: \`${title}\``;
+    return `Now playing: \`${disc.title}\``;
 }

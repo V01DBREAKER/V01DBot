@@ -15,6 +15,24 @@ module.exports = {
                 .setDescription('Whether to stop')
         ),
 	async execute(interaction) {
+
+        const jukebox = interaction.client.music.get(interaction.guildId);
+        if (!jukebox){
+            interaction.channel.send("Nothing playing at the moment.")
+        }
+        const playlist = jukebox.getNextUp();
+        const body = [];
+        for (const disc in playlist){
+            body.push({
+                title: disc.title,
+                thumbnail: {
+                    url: disc.thumbnail
+                }
+            })
+        };
+        interaction.channel.send({embeds: body});
+        return;
+
         /// command for testing overlaying sounds on demand
         // currently not working
         if (interaction.options.getBoolean('stop') == true) {

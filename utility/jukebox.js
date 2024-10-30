@@ -1,7 +1,9 @@
 const dv = require('@discordjs/voice');
 const ytdl = require('@distube/ytdl-core');
+const fs = require('fs')
 
-module.exports = class Jukebox {
+
+class Jukebox {
     constructor(client, channel){
         this.playlist = []
 
@@ -19,20 +21,21 @@ module.exports = class Jukebox {
         console.log(`Created jukebox at: ${channel.id}`);
     }
 
-    async add(url) {
-        this.playlist.push(url)
+    add(url) {
+        const info = ytdl.getInfo(url);
+        const disc = new Disc(url, info);
+        this.playlist.push(disc)
         if (this.playlist.length < 2){
-            const title = await this.play()
-            return [false, title];
+            return [false, disc];
         }
-        const info = await ytdl.getInfo(url);
-        return [true, info.videoDetails.title];
+        this.play();
+        return [true, disc];
     }
     
-    async play() {
+    play() {
         if (this.playlist.length < 1) return null;
         
-        const ytStream = this.ytStream(this.playlist[0]);
+        const ytStream = this.ytStream(this.playlist[0].url);
 
         this.resource = dv.createAudioResource(ytStream, {inlineVolume: true});
         this.resource.volume.setVolume(0.5);
@@ -46,8 +49,7 @@ module.exports = class Jukebox {
                 this.stop()
             }
         });
-        const info = await ytdl.getInfo(this.playlist[0]);
-        return info.videoDetails.title;
+        return this.playlist[0];
     }
 
     async stop() {
@@ -60,7 +62,31 @@ module.exports = class Jukebox {
         return ytdl(url, {
             filter: 'audioonly',
             quality: 'highestaudio',
+            dlChunkSize: 0,
             highWaterMark: 1 << 25
         });
     }
+
+    getNextUp(){
+        // return first 5 disks of playlist
+        if (this.playlist.length < 5){
+            return this.playlist
+        }
+        return this.playlist.slice(0, 5)
+    }
+}
+
+class Disc {
+    constructor(url, info){
+        this.url = url;
+        this.videoId = info.videoDetails.videoId;
+        this.thumbnail = `https://i.ytimg.com/vi/${this.videoId}/maxresdefault.jpg`;
+        this.title = info.videoDetails.title;
+        this.length = info.videoDetails.lengthSeconds;
+    }
+}
+
+module.exports = {
+    Jukebox,
+    Disc
 }
