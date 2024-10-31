@@ -25,7 +25,11 @@ module.exports = {
                 .setDescription('Displays the song queue.'))
         .addSubcommand(skip => 
             skip.setName('skip')
-                .setDescription('Skips the current song.'))
+                .setDescription('Skips the current song.')
+                .addIntegerOption(amount => 
+                    amount.setName('amount')
+                        .setDescription('Number of songs to skip.')
+                        .setMinValue(1)))
         .addSubcommand(nowplaying => 
             nowplaying.setName('nowplaying')
                 .setDescription('Get information about the current song.')),
@@ -107,23 +111,22 @@ async function playlist(interaction) {
     if (!jukebox) {
         await interaction.reply("Nothing currently playing.");
     } else {
-        const numDiscs = jukebox.playlist.length;
-        const res = await interaction.reply({embeds: playlistEmbed(1, jukebox), components: playlistButtons(1, numDiscs)});
+        const res = await interaction.reply({embeds: playlistEmbed(1, jukebox), components: playlistButtons(1, jukebox.playlist.length)});
         async function buttonReplier(response, page){
             try {
                 const confirmation = await response.awaitMessageComponent({ time: 60_000 });
                 if (confirmation.customId === 'prev') {
-                    const res = await confirmation.update({embeds: playlistEmbed(page-1, jukebox), components: playlistButtons(page-1, numDiscs)});
+                    const res = await confirmation.update({embeds: playlistEmbed(page-1, jukebox), components: playlistButtons(page-1, jukebox.playlist.length)});
                     buttonReplier(res, page-1);
                 } else if (confirmation.customId === 'next') {
-                    const res = await confirmation.update({embeds: playlistEmbed(page+1, jukebox), components: playlistButtons(page+1, numDiscs)});
+                    const res = await confirmation.update({embeds: playlistEmbed(page+1, jukebox), components: playlistButtons(page+1, jukebox.playlist.length)});
                     buttonReplier(res, page+1);
                 }
             } catch (e) {
                 const pageButton = new ButtonBuilder()
                     .setEmoji('📄')
                     .setStyle(ButtonStyle.Primary)
-                    .setLabel(`Page: ${page}`)
+                    .setLabel(`Page: ${page}/${Math.ceil(jukebox.playlist.length/5)}`)
                     .setCustomId('page')
                     .setDisabled(true);
                 const row = new ActionRowBuilder()
@@ -155,10 +158,10 @@ function playlistButtons(pageNum, itemNum) {
     if (pageNum < 2) {
         prev.setDisabled(true);
     }
-    if (pageNum * 5 > itemNum){
+    if (pageNum * 5 >= itemNum){
         next.setDisabled(true);
     }
-    page.setLabel(`Page: ${pageNum}`);
+    page.setLabel(`Page: ${pageNum}/${Math.ceil(itemNum/5)}`);
     const row = new ActionRowBuilder()
         .addComponents(prev, next, page);
     return [row]
@@ -181,7 +184,8 @@ function playlistEmbed(page, jukebox){
 function skip(interaction) {
     let jukebox = interaction.client.music.get(interaction.guildId);
     if (!jukebox) return "Nothing currently playing.";
-    const over = jukebox.skip();
+    let amount = interaction.options.getInteger('amount')
+    const over = jukebox.skip(amount);
     if (over) {
         return "No audio left to play."
     }

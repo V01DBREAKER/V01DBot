@@ -65,13 +65,22 @@ class Jukebox {
         }
     }
 
-    skip() {
+    skip(amount) {
         if (this.playlist.length < 2){
             this.stop();
-            return true
+            return true;
+        } else if (amount) {
+            if (this.playlist.length <= amount){
+                this.stop();
+                return true;
+            }
+            // slice to amount -1 to compensate for next()'s shift
+            this.playlist = this.playlist.slice(amount-1) ;
+            this.next();
+            return false;
         } else {
             this.next();
-            return false
+            return false;
         }
     }
 
