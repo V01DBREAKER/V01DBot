@@ -1,5 +1,5 @@
 const path = require('node:path');
-const { SlashCommandBuilder } = require('discord.js');
+const { ActionRowBuilder, SlashCommandBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const dv = require('@discordjs/voice');
 const ytdl = require('@distube/ytdl-core');
 const ytpl = require('ytpl');
@@ -30,27 +30,28 @@ module.exports = {
             nowplaying.setName('nowplaying')
                 .setDescription('Get information about the current song.')),
 	async execute(interaction) {
-        await interaction.deferReply();
 		const subcommand = interaction.options.getSubcommand()
         //let reply = await eval(subcommand + "(interaction)");
         switch (subcommand) { // i would use eval for this but idk tbh
             case 'play':
-                reply = await play(interaction);
+                await interaction.deferReply();
+                const reply = await play(interaction);
+                interaction.editReply(reply);
                 break;
             case 'stop':
-                reply = stop(interaction);
+                interaction.reply(stop(interaction));
                 break;
             case 'playlist':
-                reply = playlist(interaction);
+                playlist(interaction);
                 break;
             case 'skip':
-                reply = skip(interaction);
+                interaction.reply(skip(interaction));
                 break;
             case 'nowplaying':
-                reply = nowplaying(interaction)
+                interaction.reply(nowplaying(interaction));
                 break;
         }
-        interaction.editReply(reply);
+        
 	},
 };
 
@@ -81,7 +82,7 @@ async function play(interaction){
 
         const listInfo = await ytpl(url);
         for (const item of listInfo.items){
-            jukebox.add(item.shortUrl);
+            jukebox.add(item.shortUrl); // playlist > 20 issue (slow)
         }
         return {embeds:[{
             title: listInfo.title,
@@ -101,21 +102,80 @@ function stop(interaction){
     return "Disconnected from voice channel.";
 }
 
-function playlist(interaction) {
-    let jukebox = interaction.client.music.get(interaction.guildId);
-    if (!jukebox) return "Nothing currently playing.";
-    const playlist = jukebox.getNextUp();
-    const body = [];
+async function playlist(interaction) {
+    const jukebox = interaction.client.music.get(interaction.guildId);
+    if (!jukebox) {
+        await interaction.reply("Nothing currently playing.");
+    } else {
+        const numDiscs = jukebox.playlist.length;
+        const res = await interaction.reply({embeds: playlistEmbed(1, jukebox), components: playlistButtons(1, numDiscs)});
+        async function buttonReplier(response, page){
+            try {
+                const confirmation = await response.awaitMessageComponent({ time: 60_000 });
+                if (confirmation.customId === 'prev') {
+                    const res = await confirmation.update({embeds: playlistEmbed(page-1, jukebox), components: playlistButtons(page-1, numDiscs)});
+                    buttonReplier(res, page-1);
+                } else if (confirmation.customId === 'next') {
+                    const res = await confirmation.update({embeds: playlistEmbed(page+1, jukebox), components: playlistButtons(page+1, numDiscs)});
+                    buttonReplier(res, page+1);
+                }
+            } catch (e) {
+                const pageButton = new ButtonBuilder()
+                    .setEmoji('📄')
+                    .setStyle(ButtonStyle.Primary)
+                    .setLabel(`Page: ${page}`)
+                    .setCustomId('page')
+                    .setDisabled(true);
+                const row = new ActionRowBuilder()
+                    .addComponents(pageButton);
+                await interaction.editReply({embeds: playlistEmbed(page, jukebox), components: [row] });
+            }
+        }
+        buttonReplier(res, 1);
+    }
+}
+
+function playlistButtons(pageNum, itemNum) {
+    // each page has 5 items
+    const prev = new ButtonBuilder()
+        .setEmoji('◀️')
+        .setStyle(ButtonStyle.Secondary)
+        .setLabel('Prev')
+        .setCustomId('prev')
+    const next = new ButtonBuilder()
+        .setEmoji('▶️')
+        .setStyle(ButtonStyle.Secondary)
+        .setLabel('Next')
+        .setCustomId('next');
+    const page = new ButtonBuilder()
+        .setEmoji('📄')
+        .setStyle(ButtonStyle.Primary)
+        .setCustomId('page')
+        .setDisabled(true);
+    if (pageNum < 2) {
+        prev.setDisabled(true);
+    }
+    if (pageNum * 5 > itemNum){
+        next.setDisabled(true);
+    }
+    page.setLabel(`Page: ${pageNum}`);
+    const row = new ActionRowBuilder()
+        .addComponents(prev, next, page);
+    return [row]
+}
+
+function playlistEmbed(page, jukebox){
+    const playlist = jukebox.getNextUp(page);
+    const discs = [];
+    // add disc embed per playlist
     for (const disc of playlist){
-        body.push({
+        discs.push({
             title: disc.title,
             description: `**Duration:** ${formatTime(disc.length)}`,
-            thumbnail: {
-                url: disc.thumbnail
-            }
+            thumbnail: {url: disc.thumbnail}
         })
     };
-    return {embeds: body};
+    return discs
 }
 
 function skip(interaction) {
@@ -132,5 +192,10 @@ function nowplaying(interaction) {
     let jukebox = interaction.client.music.get(interaction.guildId);
     if (!jukebox) return "Nothing currently playing.";
     const disc = jukebox.getCurrent();
-    return `Currently playing: \`${disc.title}\``
+    const msg = [{
+        title: disc.title,
+        description: `${formatTime(Math.floor(disc.getPlayed()/1000))}/${formatTime(disc.length)}`,
+        thumbnail: {url: disc.thumbnail}
+    }]
+    return {embeds: msg};
 }

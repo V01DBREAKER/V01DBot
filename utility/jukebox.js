@@ -42,6 +42,9 @@ class Jukebox {
 
         this.player.play(this.resource);
 
+        // set current date of disc
+        this.playlist[0].setTime(Date.now());
+
         this.player.on(dv.AudioPlayerStatus.Idle, () => {
             this.next();
         });
@@ -85,12 +88,12 @@ class Jukebox {
         return this.playlist[0]
     }
 
-    getNextUp(){
-        // return first 5 disks of playlist
+    getNextUp(page){
+        // return 5 disks of playlist
         if (this.playlist.length < 5){
             return this.playlist
         }
-        return this.playlist.slice(0, 5)
+        return this.playlist.slice((5*page)-5, 5*page)
     }
 }
 
@@ -101,6 +104,18 @@ class Disc {
         this.thumbnail = `https://i.ytimg.com/vi/${this.videoId}/maxresdefault.jpg`;
         this.title = info.videoDetails.title;
         this.length = info.videoDetails.lengthSeconds;
+        this.time = null; // in ms
+    }
+
+    setTime(time){
+        this.time = time
+    }
+    getPlayed(){
+        if (!this.time){
+            return 0
+        } else {
+            return Date.now()-this.time
+        }
     }
 }
 
