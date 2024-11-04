@@ -32,7 +32,10 @@ module.exports = {
                         .setMinValue(1)))
         .addSubcommand(nowplaying => 
             nowplaying.setName('nowplaying')
-                .setDescription('Get information about the current song.')),
+                .setDescription('Get information about the current song.'))
+        .addSubcommand(pause => 
+            pause.setName('pause')
+                .setDescription('Pause or unpause the jukebox.')),
 	async execute(interaction) {
 		const subcommand = interaction.options.getSubcommand()
         //let reply = await eval(subcommand + "(interaction)");
@@ -53,6 +56,9 @@ module.exports = {
                 break;
             case 'nowplaying':
                 interaction.reply(nowplaying(interaction));
+                break;
+            case 'pause':
+                interaction.reply(pause(interaction));
                 break;
         }
         
@@ -83,14 +89,23 @@ async function play(interaction){
             jukebox = new Jukebox(interaction.client, channel);
             interaction.client.music.set(interaction.guildId, jukebox);
         }
-
+        // add first 5 songs to playlist and the rest to the waitlist
         const listInfo = await ytpl(url);
-        for (const item of listInfo.items){
-            jukebox.add(item.shortUrl); // playlist > 20 issue (slow)
+        let [isPlaying, disc] = await jukebox.addPlaylist(listInfo.items.map(el=>el.shortUrl));
+        let warning = ""
+        if (listInfo.estimatedItemCount > 100) warning = "\n*More than 100 songs in playlist, only 100 will be added.*"
+        if (isPlaying){
+            return { 
+                content: `Added \`${listInfo.title}\` to the playlist.${warning}`, embeds:[{
+                    title: listInfo.title,
+                    description: `**Songs:** ${listInfo.estimatedItemCount}\n${listInfo.description}`,
+                    thumbnail: {url: listInfo.bestThumbnail.url}
+                }]}
         }
-        return {embeds:[{
+        return {
+            content: `Now playing: \`${disc.title}\`${warning}`, embeds:[{
             title: listInfo.title,
-            description: `**Songs:** ${listInfo.estimatedItemCount}, Description:\n${listInfo.description}`,
+            description: `**Songs:** ${listInfo.estimatedItemCount},\n${listInfo.description}`,
             thumbnail: {url: listInfo.bestThumbnail.url}
         }]}
         
@@ -111,27 +126,33 @@ async function playlist(interaction) {
     if (!jukebox) {
         await interaction.reply("Nothing currently playing.");
     } else {
-        const res = await interaction.reply({embeds: playlistEmbed(1, jukebox), components: playlistButtons(1, jukebox.playlist.length)});
+        const embed = await playlistEmbed(1, jukebox)
+        const msg = "**" + jukebox.getTrackAmount() + "** *Tracks:*";
+        const res = await interaction.reply({content: msg, embeds: embed, components: playlistButtons(1, jukebox.getTrackAmount())});
         async function buttonReplier(response, page){
+            const songMsg = "**" + jukebox.getTrackAmount() + "** *Tracks:*";
             try {
                 const confirmation = await response.awaitMessageComponent({ time: 60_000 });
                 if (confirmation.customId === 'prev') {
-                    const res = await confirmation.update({embeds: playlistEmbed(page-1, jukebox), components: playlistButtons(page-1, jukebox.playlist.length)});
+                    const embed = await playlistEmbed(page-1, jukebox)
+                    const res = await confirmation.update({content: songMsg, embeds: embed, components: playlistButtons(page-1, jukebox.getTrackAmount())});
                     buttonReplier(res, page-1);
                 } else if (confirmation.customId === 'next') {
-                    const res = await confirmation.update({embeds: playlistEmbed(page+1, jukebox), components: playlistButtons(page+1, jukebox.playlist.length)});
+                    const embed = await playlistEmbed(page+1, jukebox)
+                    const res = await confirmation.update({content: songMsg, embeds: embed, components: playlistButtons(page+1, jukebox.getTrackAmount())});
                     buttonReplier(res, page+1);
                 }
             } catch (e) {
                 const pageButton = new ButtonBuilder()
                     .setEmoji('📄')
                     .setStyle(ButtonStyle.Primary)
-                    .setLabel(`Page: ${page}/${Math.ceil(jukebox.playlist.length/5)}`)
+                    .setLabel(`Page: ${page}/${Math.ceil(jukebox.getTrackAmount()/5)}`)
                     .setCustomId('page')
                     .setDisabled(true);
                 const row = new ActionRowBuilder()
                     .addComponents(pageButton);
-                await interaction.editReply({embeds: playlistEmbed(page, jukebox), components: [row] });
+                const embed = await playlistEmbed(page, jukebox)
+                await interaction.editReply({content: songMsg, embeds: embed, components: [row] });
             }
         }
         buttonReplier(res, 1);
@@ -167,8 +188,8 @@ function playlistButtons(pageNum, itemNum) {
     return [row]
 }
 
-function playlistEmbed(page, jukebox){
-    const playlist = jukebox.getNextUp(page);
+async function playlistEmbed(page, jukebox){
+    const playlist = await jukebox.getNextUp(page);
     const discs = [];
     // add disc embed per playlist
     for (const disc of playlist){
@@ -185,6 +206,7 @@ function skip(interaction) {
     let jukebox = interaction.client.music.get(interaction.guildId);
     if (!jukebox) return "Nothing currently playing.";
     let amount = interaction.options.getInteger('amount')
+    // skipping > 1 is untested
     const over = jukebox.skip(amount);
     if (over) {
         return "No audio left to play."
@@ -202,4 +224,16 @@ function nowplaying(interaction) {
         thumbnail: {url: disc.thumbnail}
     }]
     return {embeds: msg};
+}
+
+function pause(interaction) {
+    let jukebox = interaction.client.music.get(interaction.guildId);
+    if (!jukebox) return "Nothing currently playing.";
+    if (!jukebox.paused) {
+        jukebox.pause()
+        return "Pausing the Jukebox."
+    } else {
+        jukebox.unpause()
+        return "Unpausing the Jukebox."
+    }
 }
