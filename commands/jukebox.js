@@ -81,7 +81,7 @@ async function play(interaction){
             interaction.client.music.set(interaction.guildId, jukebox);
         }
         const info = await ytdl.getBasicInfo(url)
-        const disc = new Disc(info.videoDetails.videoId, info.videoDetails.title, info.videoDetails.lengthSeconds, info.videoDetails.author)
+        const disc = new Disc(info.videoDetails.videoId, info.videoDetails.title, info.videoDetails.lengthSeconds, info.videoDetails.author.name)
         const isPlaying = await jukebox.add(disc)
         const content = (isPlaying) ? `Added \`${disc.title}\` to playlist.` : `Now playing: \`${disc.title}\``;
         interaction.reply(content)
@@ -99,21 +99,18 @@ async function play(interaction){
 async function addPlaylist(interaction, id) {
     let jukebox = interaction.client.music.get(interaction.guildId);
     if (!jukebox){
+        const channel = interaction.member.voice.channel;
         jukebox = new Jukebox(interaction.client, channel);
         interaction.client.music.set(interaction.guildId, jukebox);
     }
     // add first 5 songs to playlist and the rest to the waitlist
     const result = await yts({listId: id});
-    const warning = (result.size > 100) ? "\n*More than 100 songs in playlist, only 100 will be added.*" : ""
-    const first = result.videos[0]
-    const firstDisc = new Disc(first.id, first.title, first.duration, first.author)
-    const isPlaying = jukebox.add(firstDisc)
-    result.videos.forEach((video) => {
-        const disc = new Disc(video.id, video.title, video.duration, video.author)
-        jukebox.add(disc)
-    })
-    const content = isPlaying ? `Added \`${firstDisc.title}\` to the playlist.`:`Now playing: \`${firstDisc.title}\``
-    interaction.editReply({
+    const warning = (result.size > 100) ? "\n*More than 100 songs in playlist, only 100 will be added.*" : "";
+    const first = result.videos[0];
+    const firstDisc = new Disc(first.videoId, first.title, first.duration.seconds, first.author.name);
+    const isPlaying = jukebox.add(firstDisc);
+    const content = isPlaying ? `Added \`${firstDisc.title}\` to the playlist.`:`Now playing: \`${firstDisc.title}\``;
+    await interaction.reply({
         content: content+warning,
         embeds:[{
             title: first.title,
@@ -121,11 +118,15 @@ async function addPlaylist(interaction, id) {
             thumbnail: {url: firstDisc.thumbnail}
         }]
     });
+    result.videos.slice(1).forEach((video) => {
+        const disc = new Disc(video.id, video.title, video.duration.seconds, video.author.name);
+        jukebox.add(disc);
+    })
 }
 
 async function search(interaction, query) {
     const result = await yts(query);
-    const playlist = result.videos.map((video)=> new Disc(video.videoId, video.title, video.seconds, video.author));
+    const playlist = result.videos.map((video)=> new Disc(video.videoId, video.title, video.seconds, video.author.name));
 
     let fn = (page) => { return playlist.slice((page*5)-5, page*5) }
     const response = await menu(interaction, fn, playlist.length, "Result(s) found:", true)
@@ -172,7 +173,7 @@ function skip(interaction) {
     if (over) {
         return "No audio left to play."
     }
-    return `Skipped to next audio.`
+    return `Skipped to \`${jukebox.getCurrent().title}\``
 }
 
 function nowplaying(interaction) {
@@ -243,7 +244,7 @@ function menuButtons(pageNum, itemNum) {
 function menuEmbed(page, playlist){
     return playlist.map((disc, i) => ({
         title: `${(5*(page-1)) + i + 1}. ` + disc.title,
-        description: `**Duration:** ${formatTime(disc.length)}`,
+        description: `By *${disc.author}*\n**Duration:** ${formatTime(disc.length)}`,
         thumbnail: {url: disc.thumbnail}
     })) 
 }
