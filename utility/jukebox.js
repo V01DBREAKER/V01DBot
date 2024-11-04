@@ -27,12 +27,16 @@ class Jukebox {
     async add(url) {
         const info = await ytdl.getBasicInfo(url);
         const disc = new Disc(url, info);
+        return [this.addDisc(disc), disc]
+    }
+
+    addDisc(disc) {
         this.playlist.push(disc)
         if (this.playlist.length < 2){
-            await this.play();
-            return [false, disc];
+            this.play();
+            return false;
         }
-        return [true, disc];
+        return true;
     }
 
     async addPlaylist(list){
@@ -147,7 +151,7 @@ class Jukebox {
         return this.playlist[0]
     }
 
-    async getNextUp(page){
+    getNextUp(page){
         // append the next 5 to the playlist
         for (const url of this.waitlist.slice(0, 5)){
             this.add(url);
