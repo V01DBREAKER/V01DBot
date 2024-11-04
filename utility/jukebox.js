@@ -5,8 +5,7 @@ const fs = require('fs')
 
 class Jukebox {
     constructor(client, channel){
-        this.playlist = [] // try to keep at least 5 tracks as disks ( can have more or less )
-        this.waitlist = [] // rest of the tracks as urls
+        this.playlist = []
 
         this.client = client
         this.guildId = channel.guildId
@@ -38,37 +37,6 @@ class Jukebox {
         }
         return true;
     }
-
-    /*
-    async add(url) {
-        const info = await ytdl.getBasicInfo(url);
-        const disc = new Disc(url, info);
-        return [this.addDisc(disc), disc]
-    }
-
-    addDisc(disc) {
-        this.playlist.push(disc)
-        if (this.playlist.length < 2){
-            this.play();
-            return false;
-        }
-        return true;
-    }
-
-    async addPlaylist(list){
-        if (this.playlist.length < 1) {
-            out = await this.add(list.shift());
-        } else {
-            out = [true, null]
-        }
-        let len = this.playlist.length
-        while (len < 5){
-            this.add(list.shift());
-            len += 1;
-        }
-        this.waitlist = this.waitlist.concat(list)
-        return out
-    } */
     
     async play() {
         if (this.playlist.length < 1) return null;
@@ -80,6 +48,8 @@ class Jukebox {
 
         this.player.play(this.resource);
 
+        this.player.removeAllListeners(dv.AudioPlayerStatus.Idle)
+        this.player.removeAllListeners('error')
         // set current date of disc
         this.player.once(dv.AudioPlayerStatus.Playing, () => {
             this.playlist[0].setTime(Date.now());
@@ -89,8 +59,8 @@ class Jukebox {
         });
          // if theres an issue playing, play the next song
         this.player.on('error', error => {
-            console.log(typeof(e));
-            this.next();
+            console.log(error);
+            //this.next();
         })
         return this.playlist[0];
     }
@@ -113,9 +83,9 @@ class Jukebox {
         this.client.music.set(this.guildId, null); // destroy jukebox
     }
 
-    next() {
+    async next() {
         this.playlist.shift();
-        const next = this.play();
+        const next = await this.play();
         if (!next) {
             this.stop();
         }
@@ -159,7 +129,7 @@ class Jukebox {
     }
 
     getTrackAmount(){
-        return this.playlist.length + this.waitlist.length;
+        return this.playlist.length;
     }
 }
 

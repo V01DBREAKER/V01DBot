@@ -20,25 +20,36 @@ module.exports = {
                     option.setName('url-or-query')
                         .setDescription('URL or Query for a yt video.')
                         .setRequired(true)))
-        .addSubcommand(stop =>
-            stop.setName('stop')
+        .addSubcommand(subcommand =>
+            subcommand.setName('stop')
                 .setDescription('Stops the music and disconnects the bot.'))
-        .addSubcommand(playlist => 
-            playlist.setName('playlist')
+        .addSubcommand(subcommand => 
+            subcommand.setName('playlist')
                 .setDescription('Displays the song queue.'))
-        .addSubcommand(skip => 
-            skip.setName('skip')
+        .addSubcommand(subcommand => 
+            subcommand.setName('skip')
                 .setDescription('Skips the current song.')
                 .addIntegerOption(amount => 
                     amount.setName('amount')
                         .setDescription('Number of songs to skip.')
                         .setMinValue(1)))
-        .addSubcommand(nowplaying => 
-            nowplaying.setName('nowplaying')
+        .addSubcommand(subcommand => 
+            subcommand.setName('nowplaying')
                 .setDescription('Get information about the current song.'))
-        .addSubcommand(pause => 
-            pause.setName('pause')
-                .setDescription('Pause or unpause the jukebox.')),
+        .addSubcommand(subcommand => 
+            subcommand.setName('pause')
+                .setDescription('Pause or unpause the jukebox.'))
+        .addSubcommand(subcommand => 
+            subcommand.setName('import')
+                .setDescription('Import a jukebox string or file and add to the song queue.')
+                .addAttachmentOption(option =>
+                    option.setName('playlist-file')
+                        .setDescription('Playlist file from an export.')
+                        .setRequired(true)))
+        .addSubcommand(subcommand => 
+            subcommand.setName('export')
+                .setDescription('Export the current song queue.')),
+        
                 
 	async execute(interaction) {
 		const subcommand = interaction.options.getSubcommand()
@@ -62,6 +73,12 @@ module.exports = {
             case 'pause':
                 interaction.reply(pause(interaction));
                 break;
+            case 'import':
+                importPlaylist(interaction);
+                break;
+            case 'export':
+                interaction.reply(exportPlaylist(interaction));
+                break;
         }
         
 	},
@@ -84,7 +101,7 @@ async function play(interaction){
         const disc = new Disc(info.videoDetails.videoId, info.videoDetails.title, info.videoDetails.lengthSeconds, info.videoDetails.author.name)
         const isPlaying = await jukebox.add(disc)
         const content = (isPlaying) ? `Added \`${disc.title}\` to playlist.` : `Now playing: \`${disc.title}\``;
-        interaction.reply(content)
+        await interaction.reply(content)
 
     } else if (ytpl.validateID(url)) {
         // add playlist
@@ -108,19 +125,19 @@ async function addPlaylist(interaction, id) {
     const warning = (result.size > 100) ? "\n*More than 100 songs in playlist, only 100 will be added.*" : "";
     const first = result.videos[0];
     const firstDisc = new Disc(first.videoId, first.title, first.duration.seconds, first.author.name);
-    const isPlaying = jukebox.add(firstDisc);
+    const isPlaying = await jukebox.add(firstDisc);
     const content = isPlaying ? `Added \`${firstDisc.title}\` to the playlist.`:`Now playing: \`${firstDisc.title}\``;
     await interaction.reply({
         content: content+warning,
         embeds:[{
             title: first.title,
-            description: `**Songs:** ${result.size}\nViews:${result.views}`,
+            description: `**Songs:** ${result.size}\n**Views:**${result.views}`,
             thumbnail: {url: firstDisc.thumbnail}
         }]
     });
-    result.videos.slice(1).forEach((video) => {
-        const disc = new Disc(video.id, video.title, video.duration.seconds, video.author.name);
-        jukebox.add(disc);
+    result.videos.slice(1).forEach(async (video) => {
+        const disc = new Disc(video.videoId, video.title, video.duration.seconds, video.author.name);
+        await jukebox.add(disc);
     })
 }
 
@@ -139,10 +156,11 @@ async function search(interaction, query) {
             interaction.client.music.set(interaction.guildId, jukebox);
         }
         const discs = response.values.map((el) => playlist[Number(el)])
-        let isPlaying = jukebox.add(discs[0]);
+        console.log(discs[0])
+        let isPlaying = await jukebox.add(discs[0]);
         const content = isPlaying ? `Added \`${discs[0].title}\` to playlist.` : `Now playing: \`${discs[0].title}\``;
-        response.update({content: content, embeds: [], components: []})
-        discs.slice(1).forEach((d)=>{jukebox.add(d)})
+        await response.update({content: content, embeds: [], components: []})
+        discs.slice(1).forEach(async (d)=>{await jukebox.add(d)})
     }
 }
 
@@ -186,6 +204,57 @@ function nowplaying(interaction) {
         thumbnail: {url: disc.thumbnail}
     }]
     return {embeds: msg};
+}
+
+function exportPlaylist(interaction) {
+    let jukebox = interaction.client.music.get(interaction.guildId);
+    if (!jukebox) return "Nothing currently playing.";
+    const text = jukebox.playlist.reduce((acc, disc) => acc + `${disc.id},`, "");
+    const buffer = Buffer.from(text, 'utf8')
+    const file = new Discord.AttachmentBuilder(buffer, {name: "ExportedPlaylist.txt"})
+    return {content: "**Stream data:**", files: [file]}
+}
+
+async function importPlaylist(interaction) {
+    const channel = interaction.member.voice.channel;
+    if (!channel) return interaction.reply("You must be in a voice channel!");
+    if (!channel.speakable) return interaction.reply("Cannot join channel.");
+    interaction.deferReply();
+    const attachment = interaction.options.getAttachment('playlist-file');
+    try {
+        const response = await fetch(attachment.url);
+    
+        // if there was an error send a message with the status
+        if (!response.ok)
+          return interaction.editReply({content: 'There was an error with fetching the file:' + response.statusText});
+    
+        // take the response stream and read it to completion
+        const text = await response.text();
+    
+        if (!text) {
+            return interaction.editReply('There was an error parsing the file');
+        }
+        let jukebox = interaction.client.music.get(interaction.guildId);
+        if (!jukebox){
+            jukebox = new Jukebox(interaction.client, channel);
+            interaction.client.music.set(interaction.guildId, jukebox);
+        }
+        const ids = text.split(',').slice(0, -1)
+        const video = await yts({videoId: ids[0]});
+        const firstDisc = new Disc(ids[0], video.title, video.duration.seconds, video.author.name);
+        const isPlaying = await jukebox.add(firstDisc);
+
+        const content = (isPlaying) ? `Added \`${ids.length}\` to playlist.` : `Added \`${ids.length}\` to playlist and now playing: \`${firstDisc.title}\``;
+        await interaction.editReply({content: content})
+
+        ids.slice(1).forEach(async (id)=>{
+            const video = await yts({videoId: id});
+            const disc = new Disc(id, video.title, video.duration.seconds, video.author.name);
+            await jukebox.add(disc);
+        })
+    } catch (error) {
+        console.log(error);
+    }
 }
 
 function pause(interaction) {
