@@ -17,8 +17,8 @@ module.exports = {
             play.setName('play')
                 .setDescription('Plays a yt video')
                 .addStringOption(option =>
-                    option.setName('url')
-                        .setDescription('URL to the yt video')
+                    option.setName('url-or-query')
+                        .setDescription('URL or Query for a yt video.')
                         .setRequired(true)))
         .addSubcommand(stop =>
             stop.setName('stop')
@@ -67,72 +67,66 @@ module.exports = {
 	},
 };
 
+
 async function play(interaction){
     const channel = interaction.member.voice.channel;
     if (!channel) return "You must be in a voice channel!";
     if (!channel.speakable) return "Cannot join channel.";
 
-    const url = interaction.options.getString('url')
+    const url = interaction.options.getString('url-or-query')
     if (ytdl.validateURL(url)) {
         let jukebox = interaction.client.music.get(interaction.guildId);
         if (!jukebox){
             jukebox = new Jukebox(interaction.client, channel);
             interaction.client.music.set(interaction.guildId, jukebox);
         }
-        
-        let [isPlaying, disc] = await jukebox.add(url)
-        if (isPlaying){
-            return `Added \`${disc.title}\` to playlist.`
-        }
-        return `Now playing: \`${disc.title}\``;
+        const info = await ytdl.getBasicInfo(url)
+        const disc = new Disc(info.videoDetails.videoId, info.videoDetails.title, info.videoDetails.lengthSeconds, info.videoDetails.author)
+        const isPlaying = await jukebox.add(disc)
+        const content = (isPlaying) ? `Added \`${disc.title}\` to playlist.` : `Now playing: \`${disc.title}\``;
+        interaction.reply(content)
+
     } else if (ytpl.validateID(url)) {
-        let jukebox = interaction.client.music.get(interaction.guildId);
-        if (!jukebox){
-            jukebox = new Jukebox(interaction.client, channel);
-            interaction.client.music.set(interaction.guildId, jukebox);
-        }
-        // add first 5 songs to playlist and the rest to the waitlist
-        const listInfo = await ytpl(url);
-        let [isPlaying, disc] = await jukebox.addPlaylist(listInfo.items.map(el=>el.shortUrl));
-        let warning = ""
-        if (listInfo.estimatedItemCount > 100) warning = "\n*More than 100 songs in playlist, only 100 will be added.*"
-        if (isPlaying){
-            interaction.editReply({ 
-                content: `Added \`${listInfo.title}\` to the playlist.${warning}`, 
-                embeds:[{
-                    title: listInfo.title,
-                    description: `**Songs:** ${listInfo.estimatedItemCount}\n${listInfo.description}`,
-                    thumbnail: {url: listInfo.bestThumbnail.url}
-                }]
-            });
-        }
-        interaction.editReply({
-            content: `Now playing: \`${disc.title}\`${warning}`,
-            embeds:[{
-                title: listInfo.title,
-                description: `**Songs:** ${listInfo.estimatedItemCount},\n${listInfo.description}`,
-                thumbnail: {url: listInfo.bestThumbnail.url}
-            }]
-        });
+        // add playlist
+        const id = await ytpl.getPlaylistID(url)
+        addPlaylist(interaction, id);
     } else {
-        // attempt search
+        // attempt search on query
         search(interaction, url)
     }
 }
 
+async function addPlaylist(interaction, id) {
+    let jukebox = interaction.client.music.get(interaction.guildId);
+    if (!jukebox){
+        jukebox = new Jukebox(interaction.client, channel);
+        interaction.client.music.set(interaction.guildId, jukebox);
+    }
+    // add first 5 songs to playlist and the rest to the waitlist
+    const result = await yts({listId: id});
+    const warning = (result.size > 100) ? "\n*More than 100 songs in playlist, only 100 will be added.*" : ""
+    const first = result.videos[0]
+    const firstDisc = new Disc(first.id, first.title, first.duration, first.author)
+    const isPlaying = jukebox.add(firstDisc)
+    result.videos.forEach((video) => {
+        const disc = new Disc(video.id, video.title, video.duration, video.author)
+        jukebox.add(disc)
+    })
+    const content = isPlaying ? `Added \`${firstDisc.title}\` to the playlist.`:`Now playing: \`${firstDisc.title}\``
+    interaction.editReply({
+        content: content+warning,
+        embeds:[{
+            title: first.title,
+            description: `**Songs:** ${result.size}\nViews:${result.views}`,
+            thumbnail: {url: firstDisc.thumbnail}
+        }]
+    });
+}
+
 async function search(interaction, query) {
     const result = await yts(query);
-    let playlist = [];
-    //convert to discs
-    for (const video of result.videos) {
-        const videoDetails = {
-            videoId: video.videoId,
-            title: video.title,
-            lengthSeconds: video.seconds
-        }
-        const disc = new Disc(video.url, {videoDetails: videoDetails})
-        playlist.push(disc)
-    }
+    const playlist = result.videos.map((video)=> new Disc(video.videoId, video.title, video.seconds, video.author));
+
     let fn = (page) => { return playlist.slice((page*5)-5, page*5) }
     const response = await menu(interaction, fn, playlist.length, "Result(s) found:", true)
     if (!response) {
@@ -144,12 +138,10 @@ async function search(interaction, query) {
             interaction.client.music.set(interaction.guildId, jukebox);
         }
         const discs = response.values.map((el) => playlist[Number(el)])
-        let isPlaying = jukebox.addDisc(discs[0]);
-        if (isPlaying){response.update({content: `Added \`${discs[0].title}\` to playlist.`, embeds: [], components: []})}
-        else {response.update({content: `Now playing: \`${discs[0].title}\``, embeds: [], components: []})}
-        for (const disc in discs.slice(1)){
-            jukebox.addDisc(disc)
-        }
+        let isPlaying = jukebox.add(discs[0]);
+        const content = isPlaying ? `Added \`${discs[0].title}\` to playlist.` : `Now playing: \`${discs[0].title}\``;
+        response.update({content: content, embeds: [], components: []})
+        discs.slice(1).forEach((d)=>{jukebox.add(d)})
     }
 }
 
@@ -166,7 +158,7 @@ function playlist(interaction) {
     if (!jukebox) {
         interaction.reply("Nothing currently playing.");
     } else {
-        let fn = jukebox.getNextUp.bind(jukebox);
+        let fn = jukebox.getPage.bind(jukebox);
         menu(interaction, fn, jukebox.getTrackAmount(), "Tracks:")
     }
 }

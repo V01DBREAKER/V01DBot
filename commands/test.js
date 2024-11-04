@@ -11,6 +11,11 @@ module.exports = {
         ),
 
 	async execute(interaction) {
+        const yts = require('yt-search');
+        const list = await yts( { listId: 'PL_uNUzCOeOeVzkNPYE59e4BzKTsZIiRVq' } );
+
+        interaction.reply(list.title + " " + list.size)
+        /* selector 
         const selector = new Discord.StringSelectMenuBuilder()
             .setCustomId('select')
             .setPlaceholder('Choose a disc!')
@@ -22,6 +27,7 @@ module.exports = {
             ));
         const row = new Discord.ActionRowBuilder().addComponents(selector)
         interaction.reply({content: "hi", components: [row]})
+        */
         /* echo
         setTimeout(()=>{
             interaction.reply(interaction.options.getString('option'))

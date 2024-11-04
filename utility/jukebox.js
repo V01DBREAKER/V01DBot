@@ -24,6 +24,22 @@ class Jukebox {
         this.paused = false;
     }
 
+    /**
+     * Add disc to the jukebox, returns if jukebox is playing
+     * 
+     * @param {Disc} disc 
+     * @returns {boolean}
+     */
+    add(disc) {
+        this.playlist.push(disc)
+        if (this.playlist.length < 2){
+            this.play();
+            return false;
+        }
+        return true;
+    }
+
+    /*
     async add(url) {
         const info = await ytdl.getBasicInfo(url);
         const disc = new Disc(url, info);
@@ -52,12 +68,12 @@ class Jukebox {
         }
         this.waitlist = this.waitlist.concat(list)
         return out
-    }
+    } */
     
     async play() {
         if (this.playlist.length < 1) return null;
         
-        const ytStream = this.ytStream(this.playlist[0].url);
+        const ytStream = this.ytStream("https://www.youtube.com/watch?v=" + this.playlist[0].id);
 
         this.resource = dv.createAudioResource(ytStream, {inlineVolume: true});
         this.resource.volume.setVolume(0.5);
@@ -99,10 +115,6 @@ class Jukebox {
 
     next() {
         this.playlist.shift();
-        if (this.waitlist.length > 1){
-            this.add(this.waitlist[0]);
-            this.waitlist.shift();
-        }
         const next = this.play();
         if (!next) {
             this.stop();
@@ -117,15 +129,6 @@ class Jukebox {
             if (this.getTrackAmount() <= amount){
                 this.stop();
                 return true;
-            }
-            if (amount >= this.playlist.length){
-                this.waitlist = this.waitlist.slice(amount-this.playlist.length);
-                this.playlist = [];
-                // add 5 next tracks to playlist
-                for (const disc of this.waitlist.slice(0, 5)) {
-                    this.add(disc);
-                }
-                this.waitlist = this.waitlist.slice(5);
             } else {
                 // slice to amount -1 to compensate for next()'s shift
                 this.playlist = this.playlist.slice(amount-1) ;
@@ -151,12 +154,7 @@ class Jukebox {
         return this.playlist[0]
     }
 
-    getNextUp(page){
-        // append the next 5 to the playlist
-        for (const url of this.waitlist.slice(0, 5)){
-            this.add(url);
-        }
-        this.waitlist = this.waitlist.slice(5);
+    getPage(page){
         return this.playlist.slice((5*page)-5, 5*page)
     }
 
@@ -166,12 +164,19 @@ class Jukebox {
 }
 
 class Disc {
-    constructor(url, info){
-        this.url = url;
-        this.videoId = info.videoDetails.videoId;
-        this.thumbnail = `https://i.ytimg.com/vi/${this.videoId}/maxresdefault.jpg`;
-        this.title = info.videoDetails.title;
-        this.length = info.videoDetails.lengthSeconds;
+    /**
+     * Represents a disc in the jukebox
+     * @param {string} id - yt id
+     * @param {string} title - disc title
+     * @param {number} seconds - disc length in seconds
+     * @param {string} author - disc author
+     */
+    constructor(id, title, seconds, author){
+        this.id = id;
+        this.thumbnail = `https://i.ytimg.com/vi/${this.id}/maxresdefault.jpg`;
+        this.title = title;
+        this.length = seconds;
+        this.author = author;
         this.time = null; // in ms
         this.pauseTime = 0; // in mis
     }
