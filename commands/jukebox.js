@@ -6,7 +6,7 @@ const ytpl = require('ytpl');
 const yts = require('yt-search');
 const spotifyURI = require('spotify-uri')
 const { Jukebox, Disc } = require('../utility/jukebox');
-const { formatTime } = require('../utility/format');
+const { formatTime, tryNull } = require('../utility/utility.js');
 const fetch = require('isomorphic-unfetch')
 const spotifyFetch = require('spotify-url-info')(fetch)
 
@@ -170,20 +170,7 @@ async function search(interaction, query) {
     }
 }
 
-/**
- * Runs the async function and on error returns null
- * @param {function(T): O} f - Function to run
- * @param {T} i - Input it recieves
- * @returns {O | null} - Null or Output
- */
-async function tryNull(f, i) {
-    try {
-        const o = await f(i)
-        return o
-    } catch (e) {
-        return null
-    }
-}
+
 
 /**
  * Handle a spotify url
