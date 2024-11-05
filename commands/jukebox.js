@@ -302,7 +302,9 @@ function nowplaying(interaction) {
     const disc = jukebox.getCurrent();
     const msg = [{
         title: disc.title,
-        description: `${formatTime(Math.floor(disc.getPlayed()/1000))}/${formatTime(disc.length)}\n${disc.getUrl()}`,
+        description: `\n**By** ${disc.author}` +
+                     `\n${disc.getUrl()}` + 
+                     `${formatTime(Math.floor(disc.getPlayed()/1000))}/${formatTime(disc.length)}`,
         thumbnail: {url: disc.thumbnail}
     }]
     return {embeds: msg};
