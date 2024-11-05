@@ -1,5 +1,6 @@
 const dv = require('@discordjs/voice');
 const ytdl = require('@distube/ytdl-core');
+const { shuffleArray } = require('./utility');
 
 
 class Jukebox {
@@ -37,6 +38,10 @@ class Jukebox {
         return true;
     }
     
+    /**
+     * Begins playing the jukebox
+     * @returns {Disc | null} - The currently playing disc
+     */
     async play() {
         if (this.playlist.length < 1) return null;
         
@@ -64,24 +69,35 @@ class Jukebox {
         return this.playlist[0];
     }
 
+    /**
+     * Pauses the jukebox
+     */
     pause() {
         this.paused = true;
         this.player.pause()
         this.pauseTime = Date.now()
     }
+    /**
+     * Unpauses the jukebox
+     */
     unpause() {
         this.paused = false;
         this.player.unpause()
         this.playlist[0].addPauseTime(Date.now() - this.pauseTime)
         this.pauseTime = null;
     }
-
+    /**
+     * Stops and disconnects the jukebox
+     */
     stop() {
         // Disconnect the bot from the voice channel
         this.connection.destroy();  // Disconnect the bot
         this.client.music.set(this.guildId, null); // destroy jukebox
     }
 
+    /**
+     * Begins playing the next disc
+     */
     async next() {
         this.playlist.shift();
         const next = await this.play();
@@ -90,6 +106,11 @@ class Jukebox {
         }
     }
 
+    /**
+     * Skips {amount} number of discs
+     * @param {number} amount 
+     * @returns {boolean} if all tracks were skipped or not
+     */
     skip(amount) {
         if (this.playlist.length < 2){
             this.stop();
@@ -110,6 +131,11 @@ class Jukebox {
         }
     }
 
+    /**
+     * Returns a stream from ytdl-core from a url
+     * @param {string} url 
+     * @returns 
+     */
     ytStream(url) {
         return ytdl(url, {
             filter: 'audioonly',
@@ -127,12 +153,28 @@ class Jukebox {
         return this.playlist[0];
     }
 
+    /**
+     * Gets a page of 5 discs
+     * @param {number} page 
+     * @returns 
+     */
     getPage(page){
         return this.playlist.slice((5*page)-5, 5*page)
     }
 
+    /**
+     * Returns the number of discs in the jukebox
+     * @returns {number} - Number of discs
+     */
     getTrackAmount(){
         return this.playlist.length;
+    }
+
+    randomise(){
+        // randomise everything after the currently playing
+        const shuffled = this.playlist.slice(1);
+        shuffleArray(shuffled);
+        this.playlist = [this.playlist[0], ...shuffled]
     }
 }
 
@@ -151,12 +193,20 @@ class Disc {
         this.length = seconds;
         this.author = author;
         this.time = null; // in ms
-        this.pauseTime = 0; // in mis
+        this.pauseTime = 0; // in ms
     }
 
+    /**
+     * Set the time the disc began playing
+     * @param {number} time 
+     */
     setTime(time){
         this.time = time
     }
+    /**
+     * Returns the amount played of the disc
+     * @returns {number}
+     */
     getPlayed(){
         if (!this.time){
             return 0
@@ -164,6 +214,10 @@ class Disc {
             return Date.now() - this.time - this.pauseTime
         }
     }
+    /**
+     * Adds the amount of time paused
+     * @param {number} time 
+     */
     addPauseTime(time){
         this.pauseTime += time
     }

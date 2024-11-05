@@ -51,7 +51,10 @@ module.exports = {
                         .setRequired(true)))
         .addSubcommand(subcommand => 
             subcommand.setName('export')
-                .setDescription('Export the current song queue.')),
+                .setDescription('Export the current song queue.'))
+        .addSubcommand(subcommand => 
+            subcommand.setName('randomise')
+                .setDescription('Randomise the current song queue. (Excluding the current song)')),
         
                 
 	async execute(interaction) {
@@ -82,6 +85,9 @@ module.exports = {
             case 'export':
                 interaction.reply(exportPlaylist(interaction));
                 break;
+            case 'randomise':
+                interaction.reply(randomise(interaction));
+                break;
         }
         
 	},
@@ -98,18 +104,20 @@ async function play(interaction){
         const jukebox = getJukebox(interaction);
         const info = await ytdl.getBasicInfo(url)
         const disc = new Disc(info.videoDetails.videoId, info.videoDetails.title, info.videoDetails.lengthSeconds, info.videoDetails.author.name)
-        const isPlaying = await jukebox.add(disc)
+        const isPlaying = jukebox.add(disc)
         const content = (isPlaying) ? `Added \`${disc.title}\` to playlist.` : `Now playing: \`${disc.title}\``;
         await interaction.reply(content)
 
     } else if (ytpl.validateID(url)) {
         // add playlist
+        await interaction.deferReply();
         const id = await ytpl.getPlaylistID(url)
         addPlaylist(interaction, id);
     } else if (tryNull(spotifyURI.parse, url)) {
         spotify(interaction, url)
     } else {
         // attempt spotify on query
+        interaction.deferReply();
         search(interaction, url)
     }
 }
@@ -126,19 +134,19 @@ async function addPlaylist(interaction, id) {
     const warning = (result.size > 100) ? "\n*More than 100 songs in playlist, only 100 will be added.*" : "";
     const first = result.videos[0];
     const firstDisc = new Disc(first.videoId, first.title, first.duration.seconds, first.author.name);
-    const isPlaying = await jukebox.add(firstDisc);
+    const isPlaying = jukebox.add(firstDisc);
     const content = isPlaying ? `Added \`${firstDisc.title}\` to the playlist.`:`Now playing: \`${firstDisc.title}\``;
-    await interaction.reply({
+    await interaction.editReply({
         content: content+warning,
         embeds:[{
-            title: first.title,
-            description: `**Songs:** ${result.size}\n**Views:**${result.views}`,
-            thumbnail: {url: firstDisc.thumbnail}
+            title: result.title,
+            description: `**Author:** ${result.author.name}\n**Songs:** ${result.size}\n**Views:** ${result.views}`,
+            thumbnail: {url: result.thumbnail}
         }]
     });
     result.videos.slice(1).forEach(async (video) => {
         const disc = new Disc(video.videoId, video.title, video.duration.seconds, video.author.name);
-        await jukebox.add(disc);
+        jukebox.add(disc);
     })
 }
 
@@ -158,10 +166,10 @@ async function search(interaction, query) {
     } else {
         const jukebox = getJukebox(interaction);
         const discs = response.values.map((el) => playlist[Number(el)])
-        let isPlaying = await jukebox.add(discs[0]);
+        let isPlaying = jukebox.add(discs[0]);
         const content = isPlaying ? `Added \`${discs[0].title}\` to playlist.` : `Now playing: \`${discs[0].title}\``;
         await response.update({content: content, embeds: [], components: []})
-        discs.slice(1).forEach(async (d)=>{await jukebox.add(d)})
+        discs.slice(1).forEach(async (d)=>{jukebox.add(d)})
     }
 }
 
@@ -171,21 +179,90 @@ async function search(interaction, query) {
  * @param {string} url 
  */
 async function spotify(interaction, url) {
-    console.log(url)
     const info = await tryNull(spotifyURI.parse, url)
+
+    /**
+     * Returns a Disc given a title and artists of a spotify track.
+     * @param {string} title 
+     * @param {[string]} artists 
+     * @returns 
+     */
+    async function trackToDisc(title, artists) {
+        const results = await yts(title + " " + artists.join(' '));
+        const disc = new Disc(results.videos[0].videoId, results.videos[0].title, results.videos[0].duration.seconds, results.videos[0].author.name);
+        return disc;
+    }
+
+    /**
+     * Handle adding multiple tracks from a spotify link
+     * @param {Discord.ChatInputCommandInteraction} interaction 
+     * @param {string} url 
+     * @param {spotifyURI.ParsedSpotifyUri} info 
+     * @param {spotifyFetch.output} details 
+     * @returns 
+     */
+    async function multiTrack(interaction, url, info, details = null){
+        // if details not fetched yet, fetch them
+        if (!details) details = await tryNull(spotifyFetch.getDetails, info.uri); 
+        // if details still null, spotify url not found
+        if (!details) return interaction.reply({content: `Spotify ${info.type} **${url}** not found.`, ephemeral: true}); 
+
+        const warning = (details.tracks.length == 100) ? `\n*More than 100 songs in ${info.type}, only 100 will be added.*` : "";
+        const firstDisc = await trackToDisc(details.tracks[0].name, details.tracks[0].artist.split(', '))
+        const jukebox = getJukebox(interaction);
+        const isPlaying = jukebox.add(firstDisc);
+        const content = isPlaying ? `Added \`${firstDisc.title}\` to the playlist.`:`Now playing: \`${firstDisc.title}\``;
+        await interaction.editReply({
+            content: content+warning,
+            embeds:[{
+                title: details.preview.title,
+                description: `**Songs:** ${details.tracks.length}\n**Spotify link:**\`${details.preview.link}\``,
+                thumbnail: {url: details.preview.image}
+            }]
+        });
+         details.tracks.slice(1).forEach(async (track)=>{
+            const disc = await trackToDisc(track.name, track.artist.split(', '))
+            jukebox.add(disc)
+        });
+    }
+
     if (info.type === "track") {
         const details = await tryNull(spotifyFetch.getPreview, info.uri)
-        if (!details) return interaction.reply({content: `Spotify track ${url} not found.`, ephemeral: true});
-        interaction.deferReply()
-        const results = await yts(details.title + " " + details.artist);
-        const disc = new Disc(results.videos[0].videoId, results.videos[0].title, results.videos[0].duration.seconds, results.videos[0].author.name);
+        if (!details) return interaction.reply({content: `Spotify track *${url}* not found.`, ephemeral: true});
+        await interaction.deferReply();
+        const disc = await trackToDisc(details.title, details.artist.split(', '));
         const jukebox = getJukebox(interaction);
-        const isPlaying = await jukebox.add(disc)
+        const isPlaying = jukebox.add(disc);
         const content = (isPlaying) ? `Added \`${disc.title}\` to playlist.` : `Now playing: \`${disc.title}\``;
         await interaction.editReply(content)
-
+    } else if (info.type === "playlist") {
+        // manually search for each track in playlist
+        await interaction.deferReply();
+        multiTrack(interaction, url, info)
+    } else if (info.type === "album") {
+        const details = await tryNull(spotifyFetch.getDetails, info.uri)
+        if (!details) return interaction.reply({content: `Spotify track *${url}* not found.`, ephemeral: true});
+        await interaction.deferReply();
+        // attempt youtube search for playlist of album 
+        const results = await yts(details.preview.title + " " + details.preview.artist.split(', ').join(' ') + " album")
+        if (results.lists.length > 1) {
+            // allow the user to choose
+            const playlist = results.lists.map((list)=> new Disc(list.listId, list.title, list.videoCount, list.author.name));
+            let fn = (page) => { return playlist.slice((page*5)-5, page*5) }
+            const response = await menu(interaction, fn, playlist.length, "Potential Match(es) found:", true, false)
+            if (!response) {
+                interaction.editReply({content: "**No playlist chosen in time.**", ephemeral: true});
+            } else {
+                // add the chosen playlist
+                await addPlaylist(interaction, playlist[response.values[0]].id);
+                interaction.editReply({components: []});
+            }
+        } else {
+            // manually search for each track using details
+            multiTrack(interaction, url, info, details)
+        }
     } else {
-        interaction.reply({content: `Spotify link type: ${info.type} currently unsupported.`, ephemeral: true})
+        return interaction.reply({content: `Spotify link type: **${info.type}** currently unsupported.`, ephemeral: true})
     }
 }
 
@@ -196,11 +273,12 @@ function stop(interaction){
     return "Disconnected from voice channel.";
 }
 
-function playlist(interaction) {
+async function playlist(interaction) {
     const jukebox = interaction.client.music.get(interaction.guildId);
     if (!jukebox) {
         interaction.reply("Nothing currently playing.");
     } else {
+        await interaction.deferReply()
         let fn = jukebox.getPage.bind(jukebox);
         menu(interaction, fn, jukebox.getTrackAmount(), "Tracks:")
     }
@@ -274,7 +352,7 @@ async function importPlaylist(interaction) {
         const ids = text.split(',').slice(0, -1)
         const video = await yts({videoId: ids[0]});
         const firstDisc = new Disc(ids[0], video.title, video.duration.seconds, video.author.name);
-        const isPlaying = await jukebox.add(firstDisc);
+        const isPlaying = jukebox.add(firstDisc);
 
         const content = (isPlaying) ? `Added \`${ids.length}\` to playlist.` : `Added \`${ids.length}\` to playlist and now playing: \`${firstDisc.title}\``;
         await interaction.editReply({content: content})
@@ -282,9 +360,16 @@ async function importPlaylist(interaction) {
         ids.slice(1).forEach(async (id)=>{
             const video = await yts({videoId: id});
             const disc = new Disc(id, video.title, video.duration.seconds, video.author.name);
-            await jukebox.add(disc);
+            jukebox.add(disc);
         })
     } catch (error) {
         console.log(error);
     }
+}
+
+function randomise(interaction) {
+    const jukebox = interaction.client.music.get(interaction.guildId);
+    if (!jukebox) return "Nothing currently playing.";
+    jukebox.randomise();
+    return {content: `**${jukebox.getTrackAmount()}** The upcoming discs have been rearranged in a **random** order`}
 }
