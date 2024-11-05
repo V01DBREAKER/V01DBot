@@ -1,6 +1,5 @@
 const dv = require('@discordjs/voice');
 const ytdl = require('@distube/ytdl-core');
-const fs = require('fs')
 
 
 class Jukebox {
@@ -178,7 +177,24 @@ class Disc {
     }
 }
 
+/**
+ * Get the jukebox for the guild the interaction was sent in.
+ * Creates a jukebox if none is given
+ * 
+ * @param {Discord.ChatInputCommandInteraction} interaction 
+ * @returns {Jukebox}
+ */
+function getJukebox(interaction) {
+    let jukebox = interaction.client.music.get(interaction.guildId);
+    if (!jukebox){
+        jukebox = new Jukebox(interaction.client, interaction.member.voice.channel);
+        interaction.client.music.set(interaction.guildId, jukebox);
+    }
+    return jukebox
+}
+
 module.exports = {
     Jukebox,
-    Disc
+    Disc,
+    getJukebox
 }
