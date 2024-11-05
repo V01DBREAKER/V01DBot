@@ -113,7 +113,7 @@ async function play(interaction){
         await interaction.deferReply();
         const id = await ytpl.getPlaylistID(url)
         addPlaylist(interaction, id);
-    } else if (tryNull(spotifyURI.parse, url)) {
+    } else if (await tryNull(spotifyURI.parse, url)) {
         spotify(interaction, url)
     } else {
         // attempt spotify on query

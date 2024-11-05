@@ -1,5 +1,5 @@
 const Discord = require('discord.js');
-const { formatTime } = require('../utility/utility')
+const { formatTime, tryNull } = require('../utility/utility')
 
 
 module.exports = {
@@ -17,13 +17,12 @@ module.exports = {
      */
 	async execute(interaction) {
         try {
+            const { parse } = require('spotify-uri')
             const option = interaction.options.getString('option')
-            const searchTerm = option ? option : "Kyougen Ado"
-            const yts = require('yt-search');
-            const list = await yts(searchTerm);
-            interaction.reply(`${list.playlists[0].thumbnail}`);
+            const result = option ? await tryNull(parse, option) : await tryNull(parse, "https://open.spotify.com/playlist/4k22Y5N4kgzaIHz8sT1X8b?si=839b950daf334c78")
+            interaction.reply({content: `Result: ${result ? true : false}`});
         } catch (err) {
-            interaction.reply(err.toString())
+            interaction.reply(err.toString());
         }
         /* spotify
             const fetch = require('isomorphic-unfetch')
@@ -36,9 +35,11 @@ module.exports = {
             interaction.reply(`${result.tracks.length}`)
         */
         /* yt-search
-        const yts = require('yt-search');
-        const list = await yts( { listId: 'PL_uNUzCOeOeVzkNPYE59e4BzKTsZIiRVq' } );
-        interaction.reply(list.title + " " + list.size)
+            const option = interaction.options.getString('option')
+            const searchTerm = option ? option : "Kyougen Ado"
+            const yts = require('yt-search');
+            const list = await yts(searchTerm);
+            interaction.reply(`${list.playlists[0].thumbnail}`);
         */
         /* selector 
         const selector = new Discord.StringSelectMenuBuilder()
