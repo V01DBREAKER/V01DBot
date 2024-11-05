@@ -9,7 +9,7 @@ mkdir -p "$LOG_DIR"
 # Infinite loop to keep running the command
 while true; do
     # Run the npm command and capture both output and errors
-    OUTPUT=$(npm run app 2>&1)
+    OUTPUT=$(npm run start 2>&1)
     
     # Get the current date and time for the log filename
     TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
