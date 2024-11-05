@@ -4,8 +4,11 @@ const dv = require('@discordjs/voice');
 const ytdl = require('@distube/ytdl-core');
 const ytpl = require('ytpl');
 const yts = require('yt-search');
+const spotifyURI = require('spotify-uri')
 const { Jukebox, Disc } = require('../utility/jukebox');
 const { formatTime } = require('../utility/format');
+const fetch = require('isomorphic-unfetch')
+const spotifyFetch = require('spotify-url-info')(fetch)
 
 const MAX_RESPONSE_MS = 60_000;
 
@@ -84,19 +87,30 @@ module.exports = {
 	},
 };
 
+/**
+ * Get the jukebox for the guild the interaction was sent in.
+ * Creates a jukebox if none is given
+ * 
+ * @param {Discord.ChatInputCommandInteraction} interaction 
+ * @returns {Jukebox}
+ */
+function getJukebox(interaction) {
+    let jukebox = interaction.client.music.get(interaction.guildId);
+    if (!jukebox){
+        jukebox = new Jukebox(interaction.client, interaction.member.voice.channel);
+        interaction.client.music.set(interaction.guildId, jukebox);
+    }
+    return jukebox
+}
 
 async function play(interaction){
     const channel = interaction.member.voice.channel;
-    if (!channel) return "You must be in a voice channel!";
-    if (!channel.speakable) return "Cannot join channel.";
+    if (!channel) return interaction.reply("You must be in a voice channel!");
+    if (!channel.speakable) return interaction.reply("Cannot join channel.");
 
     const url = interaction.options.getString('url-or-query')
     if (ytdl.validateURL(url)) {
-        let jukebox = interaction.client.music.get(interaction.guildId);
-        if (!jukebox){
-            jukebox = new Jukebox(interaction.client, channel);
-            interaction.client.music.set(interaction.guildId, jukebox);
-        }
+        const jukebox = getJukebox(interaction);
         const info = await ytdl.getBasicInfo(url)
         const disc = new Disc(info.videoDetails.videoId, info.videoDetails.title, info.videoDetails.lengthSeconds, info.videoDetails.author.name)
         const isPlaying = await jukebox.add(disc)
@@ -107,19 +121,16 @@ async function play(interaction){
         // add playlist
         const id = await ytpl.getPlaylistID(url)
         addPlaylist(interaction, id);
+    } else if (tryNull(spotifyURI.parse, url)) {
+        spotify(interaction, url)
     } else {
-        // attempt search on query
+        // attempt spotify on query
         search(interaction, url)
     }
 }
 
 async function addPlaylist(interaction, id) {
-    let jukebox = interaction.client.music.get(interaction.guildId);
-    if (!jukebox){
-        const channel = interaction.member.voice.channel;
-        jukebox = new Jukebox(interaction.client, channel);
-        interaction.client.music.set(interaction.guildId, jukebox);
-    }
+    const jukebox = getJukebox(interaction);
     // add first 5 songs to playlist and the rest to the waitlist
     const result = await yts({listId: id});
     const warning = (result.size > 100) ? "\n*More than 100 songs in playlist, only 100 will be added.*" : "";
@@ -150,13 +161,8 @@ async function search(interaction, query) {
     if (!response) {
         interaction.editReply({content: "**No disc chosen in time.**", ephemeral: true});
     } else {
-        let jukebox = interaction.client.music.get(interaction.guildId);
-        if (!jukebox){
-            jukebox = new Jukebox(interaction.client, interaction.member.voice.channel);
-            interaction.client.music.set(interaction.guildId, jukebox);
-        }
+        const jukebox = getJukebox(interaction);
         const discs = response.values.map((el) => playlist[Number(el)])
-        console.log(discs[0])
         let isPlaying = await jukebox.add(discs[0]);
         const content = isPlaying ? `Added \`${discs[0].title}\` to playlist.` : `Now playing: \`${discs[0].title}\``;
         await response.update({content: content, embeds: [], components: []})
@@ -164,9 +170,47 @@ async function search(interaction, query) {
     }
 }
 
+/**
+ * Runs the async function and on error returns null
+ * @param {function(T): O} f - Function to run
+ * @param {T} i - Input it recieves
+ * @returns {O | null} - Null or Output
+ */
+async function tryNull(f, i) {
+    try {
+        const o = await f(i)
+        return o
+    } catch (e) {
+        return null
+    }
+}
+
+/**
+ * Handle a spotify url
+ * @param {Discord.ChatInputCommandInteraction} interaction 
+ * @param {string} url 
+ */
+async function spotify(interaction, url) {
+    console.log(url)
+    const info = await tryNull(spotifyURI.parse, url)
+    if (info.type === "track") {
+        const details = await tryNull(spotifyFetch.getPreview, info.uri)
+        if (!details) return interaction.reply({content: `Spotify track ${url} not found.`, ephemeral: true});
+        interaction.deferReply()
+        const results = await yts(details.title + " " + details.artist);
+        const disc = new Disc(results.videos[0].videoId, results.videos[0].title, results.videos[0].duration.seconds, results.videos[0].author.name);
+        const jukebox = getJukebox(interaction);
+        const isPlaying = await jukebox.add(disc)
+        const content = (isPlaying) ? `Added \`${disc.title}\` to playlist.` : `Now playing: \`${disc.title}\``;
+        await interaction.editReply(content)
+
+    } else {
+        interaction.reply({content: `Spotify link type: ${info.type} currently unsupported.`, ephemeral: true})
+    }
+}
 
 function stop(interaction){
-    let jukebox = interaction.client.music.get(interaction.guildId);
+    const jukebox = interaction.client.music.get(interaction.guildId);
     if (!jukebox) return "Nothing currently playing.";
     jukebox.stop();
     return "Disconnected from voice channel.";
@@ -183,7 +227,7 @@ function playlist(interaction) {
 }
 
 function skip(interaction) {
-    let jukebox = interaction.client.music.get(interaction.guildId);
+    const jukebox = interaction.client.music.get(interaction.guildId);
     if (!jukebox) return "Nothing currently playing.";
     let amount = interaction.options.getInteger('amount')
     // skipping > 1 is untested
@@ -195,19 +239,19 @@ function skip(interaction) {
 }
 
 function nowplaying(interaction) {
-    let jukebox = interaction.client.music.get(interaction.guildId);
+    const jukebox = interaction.client.music.get(interaction.guildId);
     if (!jukebox) return "Nothing currently playing.";
     const disc = jukebox.getCurrent();
     const msg = [{
         title: disc.title,
-        description: `${formatTime(Math.floor(disc.getPlayed()/1000))}/${formatTime(disc.length)}`,
+        description: `${formatTime(Math.floor(disc.getPlayed()/1000))}/${formatTime(disc.length)}\n${disc.getUrl()}`,
         thumbnail: {url: disc.thumbnail}
     }]
     return {embeds: msg};
 }
 
 function exportPlaylist(interaction) {
-    let jukebox = interaction.client.music.get(interaction.guildId);
+    const jukebox = interaction.client.music.get(interaction.guildId);
     if (!jukebox) return "Nothing currently playing.";
     const text = jukebox.playlist.reduce((acc, disc) => acc + `${disc.id},`, "");
     const buffer = Buffer.from(text, 'utf8')
@@ -234,11 +278,7 @@ async function importPlaylist(interaction) {
         if (!text) {
             return interaction.editReply('There was an error parsing the file');
         }
-        let jukebox = interaction.client.music.get(interaction.guildId);
-        if (!jukebox){
-            jukebox = new Jukebox(interaction.client, channel);
-            interaction.client.music.set(interaction.guildId, jukebox);
-        }
+        const jukebox = getJukebox(interaction)
         const ids = text.split(',').slice(0, -1)
         const video = await yts({videoId: ids[0]});
         const firstDisc = new Disc(ids[0], video.title, video.duration.seconds, video.author.name);
@@ -258,7 +298,7 @@ async function importPlaylist(interaction) {
 }
 
 function pause(interaction) {
-    let jukebox = interaction.client.music.get(interaction.guildId);
+    const jukebox = interaction.client.music.get(interaction.guildId);
     if (!jukebox) return "Nothing currently playing.";
     if (!jukebox.paused) {
         jukebox.pause()
@@ -390,3 +430,5 @@ async function menu(interaction, getDiscs, length, msg, select){
     }
     return buttonReplier(res, 1);
 }
+
+// https://www.npmjs.com/package/spotify-url-info next up

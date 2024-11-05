@@ -120,8 +120,12 @@ class Jukebox {
         });
     }
 
+    /**
+     * Returns currently playing Disc
+     * @returns {Disc}
+     */
     getCurrent(){
-        return this.playlist[0]
+        return this.playlist[0];
     }
 
     getPage(page){
@@ -163,6 +167,14 @@ class Disc {
     }
     addPauseTime(time){
         this.pauseTime += time
+    }
+
+    /**
+     * Get yt URL of disc
+     * @returns string
+     */
+    getUrl(){
+        return "https://www.youtube.com/watch?v=" + this.id;
     }
 }
 
